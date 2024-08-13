@@ -134,7 +134,7 @@ cf_avg <- mean(cf_bySGG$이용률)
 
 
 ## capacity factor (%) ##
-LandList <- excel_sheets("../data/totalData_individual.xlsx")[!excel_sheets("../data/totalData_individual.xlsx") %in% c("LCOE_byScale","LCOE_bySGG","parameter", "CF")]
+LandList <- excel_sheets("../data/totalData_individual.xlsx")[!excel_sheets("../data/totalData_individual.xlsx") %in% c("LCOE_byTech","LCOE_bySGGTech","parameter", "CF")]
 
 
 getFullData <- function() {
@@ -173,7 +173,7 @@ rawData_fullpower <- rawData_full %>%
 
 
 ## LCOE by technology (원/kWh) ##
-rawData_LCOE_bySGGTech <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "LCOE_bySGG", col_names = T) 
+rawData_LCOE_bySGGTech <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "LCOE_bySGGTech", col_names = T) 
 
 rawData_LCOE_bySGGTech_avg <- rawData_LCOE_bySGGTech %>%
   gather(-시군구_1, -시군구_2, -Units, key = technology, value = LCOE) %>%
@@ -185,6 +185,31 @@ supplyCurve_test <- rawData_fullpower %>%
   left_join(rawData_LCOE_bySGGTech_avg, by = c("지역", "technology")) %>%
   filter(!is.na(LCOE))
 
+supplyCurve_test_order <- supplyCurve_test %>%
+  arrange(desc(발전량)) %>%
+  arrange(LCOE)
+
+
+tt <- supplyCurve_test_order %>%
+  mutate(x1 = lag(cumsum(발전량)),
+         x2 = cumsum(발전량),
+         y1 = 0,
+         y2 = LCOE) %>%
+  mutate(x1 = case_when(
+    
+    is.na(x1) ~ 0,
+    TRUE ~ x1
+    
+  ))
+
+ggplot() + 
+  scale_x_continuous(name="x") + 
+  scale_y_continuous(name="y") +
+  geom_rect(data=tt, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, size = 0.1) +
+  facet_wrap(~유형)
+  #geom_text(data=tt, aes(x=x1+(x2-x1)/2, y=y1+(y2-y1)/2, label=r), size=4)
+  #opts(title="geom_rect", plot.title=theme_text(size=40, vjust=1.5))
+
 
 
 
@@ -193,7 +218,6 @@ draw_supplyCurve_test <- supplyCurve_test %>%
   ggmacc(abatement = 발전량, mac = LCOE, fill = 유형, cost_threshold = 100,
          zero_line = TRUE, threshold_line = TRUE, threshold_fade = 0.3)
 
-draw_supplyCurve_test
 
 
 
