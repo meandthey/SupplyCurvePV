@@ -69,35 +69,6 @@ makeFullname <- function(data) {
   
 }
 
-# AddSthNth <- function(data) {
-#   
-#   colnames_data <- colnames(data)
-#   
-#   dataSthNth <- data %>%
-#     mutate(지역A = case_when(
-#       
-#       지역 %in% c(SGG_South) ~ "경기남부",
-#       지역 %in% c(SGG_North) ~ "경기북부",
-#       TRUE ~ 'else'
-#       
-#     )) %>%
-#     group_by(ID, 유형_full, 유형1, 유형2, 유형3, 유형4, 유형5, 유형6, 이격유형,
-#              지역A, 시나리오) %>% summarize(면적 = sum(면적), 설비용량 = sum(설비용량), 연발전량 = sum(연발전량)) %>% ungroup() %>%
-#     rename(지역 = 지역A) %>%
-#     select(colnames_data)
-#   
-#   dataTotal <- data %>%
-#     mutate(지역A = "전체") %>%
-#     group_by(ID, 유형_full, 유형1, 유형2, 유형3, 유형4, 유형5, 유형6, 이격유형,
-#              지역A, 시나리오) %>% summarize(면적 = sum(면적), 설비용량 = sum(설비용량), 연발전량 = sum(연발전량)) %>% ungroup() %>%
-#     rename(지역 = 지역A) %>%
-#     select(colnames_data)
-#   
-#   outputData <- data %>% bind_rows(dataSthNth, dataTotal)
-# 
-#   return(outputData)
-#   
-# }
 
 orderSGG_Wtotal <- function(data) {
   
@@ -209,6 +180,48 @@ ggplot() +
   facet_wrap(~유형)
   #geom_text(data=tt, aes(x=x1+(x2-x1)/2, y=y1+(y2-y1)/2, label=r), size=4)
   #opts(title="geom_rect", plot.title=theme_text(size=40, vjust=1.5))
+
+
+
+
+tt_ind <- tt %>%
+  filter(유형 =="산업단지")
+
+ggplot() + 
+  scale_x_continuous(name="x") + 
+  scale_y_continuous(name="y") +
+  geom_rect(data=tt_ind, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, size = 0.1)
+
+
+
+
+###
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

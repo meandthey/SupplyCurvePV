@@ -28,7 +28,13 @@ allprvData <- rawData %>%
   select(소재지도로명주소, 소재지지번주소, 설치상세위치구분명, 설비용량, 설치면적, coef) %>%
   arrange(coef) %>%
   mutate(ID = c(1:nrow(.))) %>%
-  filter(ID > 24 & ID < 2322)
+  filter(ID > 24 & ID < 2322) %>%
+  mutate(설치상세위치구분명 = case_when(
+    
+    설치상세위치구분명 == "옥외" ~ "Ground-mounted PV",
+    설치상세위치구분명 == "옥상" ~ "Roof-top PV"
+    
+  ))
 
 
 
@@ -36,20 +42,20 @@ allprvData <- rawData %>%
 ##### normal Scale #####
 
 allprvData %>%
-  filter(설치상세위치구분명 == "옥외") %>%
+  filter(설치상세위치구분명 == "Ground-mounted PV") %>%
   mutate(average = sum(설치면적)/sum(설비용량)) 
 
 allprvData %>%
-  filter(설치상세위치구분명 == "옥상") %>%
+  filter(설치상세위치구분명 == "Roof-top PV") %>%
   mutate(average = sum(설치면적)/sum(설비용량))
 
 averageLine_Normal <- data.frame(sl = c(11.5083, 7.2379),
                     int = c(0,0),
-                    Type = c("옥외", "옥상"))
+                    Type = c("Ground-mounted PV", "Roof-top PV"))
 
 ggplot(data = allprvData, aes(x =  설비용량, y = 설치면적)) +
   geom_point(aes(colour = 설치상세위치구분명), size = 2) +
-  geom_abline(data = averageLine, aes(slope = sl, intercept = int, colour = Type))
+  geom_abline(data = averageLine_Normal, aes(slope = sl, intercept = int, colour = Type))
   #geom_abline(data = average,slope = 7.2379, intercept = 0, linetype = 2)
   #scale_x_continuous(trans = 'log10') +
   #scale_y_continuous(trans = 'log10')
@@ -57,20 +63,24 @@ ggplot(data = allprvData, aes(x =  설비용량, y = 설치면적)) +
 
 ##### Log10 Scale #####
 allprvData %>%
-  filter(설치상세위치구분명 == "옥외") %>%
+  filter(설치상세위치구분명 == "Ground-mounted PV") %>%
   mutate(average = sum(log10(설치면적))/sum(log10(설비용량)))
 
 
 allprvData %>%
-  filter(설치상세위치구분명 == "옥상") %>%
+  filter(설치상세위치구분명 == "Roof-top PV") %>%
   mutate(average = sum(log10(설치면적))/sum(log10(설비용량)))
 
 averageLine_Log10 <- data.frame(sl = c(1.4834, 1.4336),
                                  int = c(0,0),
-                                 Type = c("옥외", "옥상"))
+                                 Type = c("Ground-mounted PV", "Roof-top PV"))
+
+
+
+  
 
 ggplot(data = allprvData, aes(x =  설비용량, y = 설치면적)) +
-  geom_point(aes(colour = 설치상세위치구분명), size = 2) +
+  geom_point(aes(colour = 설치상세위치구분명), size = 5) +
   geom_abline(data = averageLine_Log10, linetype = 2, linewidth = 0.8, aes(slope = sl, intercept = int, colour = Type)) +
 
   scale_x_continuous(trans = 'log10') +
@@ -79,12 +89,12 @@ ggplot(data = allprvData, aes(x =  설비용량, y = 설치면적)) +
   coord_cartesian(expand = FALSE, 
                   xlim = c(1, 2000), ylim = c(1, 50000)) +
   
-  theme(legend.position = "none",
+  theme(legend.position = "right",
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         #axis.text.x = element_blank(),
         #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        text = element_text(size = 30))
+        text = element_text(size = 40))
 
 
 
