@@ -176,22 +176,39 @@ tt <- supplyCurve_test_order %>%
 ggplot() + 
   scale_x_continuous(name="x") + 
   scale_y_continuous(name="y") +
-  geom_rect(data=tt, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, size = 0.1) +
-  facet_wrap(~유형)
+  geom_rect(data=tt, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, size = 0.1)
+  #facet_wrap(~유형)
   #geom_text(data=tt, aes(x=x1+(x2-x1)/2, y=y1+(y2-y1)/2, label=r), size=4)
   #opts(title="geom_rect", plot.title=theme_text(size=40, vjust=1.5))
 
 
+############# 유형별로 그려보기기 ############# 
 
+ind_tt_graph <- supplyCurve_test_order %>%
+  filter(유형 == "산업단지") %>%
+  mutate(x1 = lag(cumsum(발전량)),
+         x2 = cumsum(발전량),
+         y1 = 0,
+         y2 = LCOE) %>%
+  mutate(x1 = case_when(
+    
+    is.na(x1) ~ 0,
+    TRUE ~ x1
+    
+  ))
 
-tt_ind <- tt %>%
-  filter(유형 =="산업단지")
+  
+  
 
 ggplot() + 
   scale_x_continuous(name="x") + 
   scale_y_continuous(name="y") +
-  geom_rect(data=tt_ind, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, size = 0.1)
+  geom_rect(data=ind_tt_graph, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, linetype = 1)
 
+
+
+tt %>%
+  
 
 
 

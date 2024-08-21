@@ -67,3 +67,15 @@ ggplot(data = rftp_PV_status, aes(x =  설비용량, y = 설치면적)) +
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+

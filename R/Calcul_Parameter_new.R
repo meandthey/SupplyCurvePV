@@ -54,11 +54,20 @@ averageLine_Normal <- data.frame(sl = c(11.5083, 7.2379),
                     Type = c("Ground-mounted PV", "Roof-top PV"))
 
 ggplot(data = allprvData, aes(x =  설비용량, y = 설치면적)) +
-  geom_point(aes(colour = 설치상세위치구분명), size = 2) +
-  geom_abline(data = averageLine_Normal, aes(slope = sl, intercept = int, colour = Type))
-  #geom_abline(data = average,slope = 7.2379, intercept = 0, linetype = 2)
-  #scale_x_continuous(trans = 'log10') +
-  #scale_y_continuous(trans = 'log10')
+  geom_point(aes(colour = 설치상세위치구분명), size = 5) +
+  geom_abline(data = averageLine_Normal, linetype = 2, linewidth = 0.8, aes(slope = sl, intercept = int, colour = Type)) +
+  theme(legend.position = "right",
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        text = element_text(size = 40)) +
+  scale_x_continuous(breaks = c(0, 250, 500, 750, 1000)) +
+  scale_y_continuous(breaks = c(0, 5000, 10000, 15000, 20000, 25000, 30000))
+  #coord_cartesian(expand = FALSE,
+  #                xlim = c(1, 50000), ylim = c(1, 50000)) +
+  #annotation_logticks() 
+
 
 
 ##### Log10 Scale #####
@@ -83,11 +92,69 @@ ggplot(data = allprvData, aes(x =  설비용량, y = 설치면적)) +
   geom_point(aes(colour = 설치상세위치구분명), size = 5) +
   geom_abline(data = averageLine_Log10, linetype = 2, linewidth = 0.8, aes(slope = sl, intercept = int, colour = Type)) +
 
-  scale_x_continuous(trans = 'log10') +
-  scale_y_continuous(trans = 'log10') +
+  # scale_x_continuous(trans = 'log10') +
+  # scale_y_continuous(trans = 'log10') +
   
-  coord_cartesian(expand = FALSE, 
-                  xlim = c(1, 2000), ylim = c(1, 50000)) +
+  # coord_cartesian(expand = FALSE, 
+  #                 xlim = c(1, 2000), ylim = c(1, 50000)) +
+  
+  theme(legend.position = "right",
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        text = element_text(size = 40)) +
+  scale_x_continuous(breaks = c(1, 10, 50, 100, 500, 1000, 5000, 10000), trans = 'log10') +
+  scale_y_continuous(breaks = c(1, 10, 50, 100, 500, 1000, 5000, 10000), trans = 'log10') +
+  coord_cartesian(expand = FALSE,
+                  xlim = c(1, 50000), ylim = c(1, 50000)) +
+  annotation_logticks() 
+
+
+
+
+
+
+## Spatial Join의 Output
+
+rawData <- readxl::read_excel("../data/PV설치 사례조사.xlsx", sheet = '데이터', skip = 0, col_names = T)
+
+rawData_graphData <- rawData %>%
+  mutate(technology = case_when(
+    
+    유형 %in% c("산단", "공동주택", "물류센터", "공공건축물") ~ "Roof-top PV",
+    유형 == "주차장" ~ "Ground-mounted PV (Parking lot)",
+    유형 == "도로IC" ~ "Ground-mounted PV (Roadside)"
+    
+  ))
+ 
+
+
+
+##### Normal Scale #####
+
+rawData_graphData_RatioCheck <- rawData_graphData %>%
+  group_by(technology) %>% summarize(`설치면적(m2)` = sum(`설치면적(m2)`),
+                                     `전체면적 (m2)` = sum(`전체면적 (m2)`)) %>%
+  mutate(ratio = `설치면적(m2)` / `전체면적 (m2)`)
+
+
+averageLine_normal <- data.frame(sl = c(0.189, 0.284, 0.545),
+                                int = c(0,0,0),
+                                Type = c("Ground-mounted PV (Parking lot)", "Ground-mounted PV (Roadside)", "Roof-top PV"))
+
+
+ggplot(data = rawData_graphData, aes(x = `전체면적 (m2)`, y = `설치면적(m2)`)) +
+  geom_point(aes(colour = technology), size = 5) +
+  #geom_abline(slope = 1, linetype = 2) +
+  geom_abline(data = averageLine_normal, linetype = 2, linewidth = 0.8, aes(slope = sl, intercept = int, colour = Type)) +
+  
+  
+  scale_x_continuous(breaks = c(0, 5000, 10000, 15000)) +
+  scale_y_continuous(breaks = c(0, 1000, 2000, 3000, 4000, 5000, 6000)) +
+  
+  # coord_cartesian(expand = FALSE, 
+  #                 xlim = c(1, 2000), ylim = c(1, 50000)) +
   
   theme(legend.position = "right",
         axis.title.x = element_blank(),
@@ -95,6 +162,51 @@ ggplot(data = allprvData, aes(x =  설비용량, y = 설치면적)) +
         #axis.text.x = element_blank(),
         #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         text = element_text(size = 40))
+
+
+
+
+
+##### Log10 Scale #####
+
+rawData_graphData %>%
+  group_by(technology) %>% summarize(`설치면적(m2)` = sum(log10(`설치면적(m2)`)),
+                                     `전체면적 (m2)` = sum(log10(`전체면적 (m2)`))) %>%
+  mutate(ratio = `설치면적(m2)` / `전체면적 (m2)`)
+  
+
+averageLine_Log10 <- data.frame(sl = c(0.744, 0.845, 0.912),
+                                int = c(0,0,0),
+                                Type = c("Ground-mounted PV (Parking lot)", "Ground-mounted PV (Roadside)", "Roof-top PV"))
+
+
+ggplot(data = rawData_graphData, aes(x = `전체면적 (m2)`, y = `설치면적(m2)`)) +
+  geom_point(aes(colour = technology), size = 5) +
+  #geom_abline(slope = 1, linetype = 2) +
+  geom_abline(data = averageLine_Log10, linetype = 2, linewidth = 0.8, aes(slope = sl, intercept = int, colour = Type)) +
+  
+  
+  scale_x_continuous(breaks = c(50, 100, 500, 1000, 5000, 10000), trans = 'log10') +
+  scale_y_continuous(breaks = c(50, 100, 500, 1000, 5000, 10000), trans = 'log10') +
+  
+  # coord_cartesian(expand = FALSE, 
+  #                 xlim = c(1, 2000), ylim = c(1, 50000)) +
+  
+  theme(legend.position = "right",
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        text = element_text(size = 40)) +
+  annotation_logticks() 
+
+ggplot(data = rawData_graphData, aes(x = `전체면적 (m2)`, y = `설치면적(m2)`)) +
+  geom_point(aes(colour = technology), size = 2) +
+  geom_abline(slope = 0.5, linetype = 2)
+
+
+
+
 
 
 
