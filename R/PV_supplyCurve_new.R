@@ -27,41 +27,41 @@ SGG_North <- c("고양시", "남양주시", "파주시", "의정부시", "양주
 makeFullname <- function(data) {
   
   target <- data %>%
-    mutate(지역 = case_when(
+    mutate(시군 = case_when(
       
-      지역 == "가평" ~ "가평군",
-      지역 == "고양" ~ "고양시",
-      지역 == "과천" ~ "과천시",
-      지역 == "광명" ~ "광명시",
-      지역 == "광주" ~ "광주시",
-      지역 == "구리" ~ "구리시",
-      지역 == "군포" ~ "군포시",
-      지역 == "김포" ~ "김포시",
-      지역 == "남양주" ~ "남양주시",
-      지역 == "동두천" ~ "동두천시",
-      지역 == "부천" ~ "부천시",
-      지역 == "성남" ~ "성남시",
-      지역 == "수원" ~ "수원시",
-      지역 == "시흥" ~ "시흥시",
-      지역 == "안산" ~ "안산시",
-      지역 == "안양" ~ "안양시",
-      지역 == "양주" ~ "양주시",
-      지역 == "양평" ~ "양평군",
-      지역 == "여주" ~ "여주시",
-      지역 == "연천" ~ "연천군",
-      지역 == "오산" ~ "오산시",
-      지역 == "용인" ~ "용인시",
-      지역 == "의왕" ~ "의왕시",
-      지역 == "의정부" ~ "의정부시",
-      지역 == "이천" ~ "이천시",
-      지역 == "파주" ~ "파주시",
-      지역 == "평택" ~ "평택시",
-      지역 == "포천" ~ "포천시",
-      지역 == "하남" ~ "하남시",
-      지역 == "화성" ~ "화성시",
-      지역 == "안성" ~ "안성시",
+      시군 == "가평" ~ "가평군",
+      시군 == "고양" ~ "고양시",
+      시군 == "과천" ~ "과천시",
+      시군 == "광명" ~ "광명시",
+      시군 == "광주" ~ "광주시",
+      시군 == "구리" ~ "구리시",
+      시군 == "군포" ~ "군포시",
+      시군 == "김포" ~ "김포시",
+      시군 == "남양주" ~ "남양주시",
+      시군 == "동두천" ~ "동두천시",
+      시군 == "부천" ~ "부천시",
+      시군 == "성남" ~ "성남시",
+      시군 == "수원" ~ "수원시",
+      시군 == "시흥" ~ "시흥시",
+      시군 == "안산" ~ "안산시",
+      시군 == "안양" ~ "안양시",
+      시군 == "양주" ~ "양주시",
+      시군 == "양평" ~ "양평군",
+      시군 == "여주" ~ "여주시",
+      시군 == "연천" ~ "연천군",
+      시군 == "오산" ~ "오산시",
+      시군 == "용인" ~ "용인시",
+      시군 == "의왕" ~ "의왕시",
+      시군 == "의정부" ~ "의정부시",
+      시군 == "이천" ~ "이천시",
+      시군 == "파주" ~ "파주시",
+      시군 == "평택" ~ "평택시",
+      시군 == "포천" ~ "포천시",
+      시군 == "하남" ~ "하남시",
+      시군 == "화성" ~ "화성시",
+      시군 == "안성" ~ "안성시",
       
-      TRUE ~ 지역
+      TRUE ~ 시군
       
     ))
   
@@ -104,7 +104,7 @@ cf_bySGG <- rawData_cf %>%
 cf_avg <- mean(cf_bySGG$이용률)
 
 
-## capacity factor (%) ##
+## Area (m2) ##
 LandList <- excel_sheets("../data/totalData_individual.xlsx")[!excel_sheets("../data/totalData_individual.xlsx") %in% c("LCOE_byTech","LCOE_bySGGTech","parameter", "CF")]
 
 
@@ -121,6 +121,12 @@ getFullData <- function() {
         grepl("이격거리규제없음", LandList[i]) ~ "N",
         TRUE ~ "Y"
         
+      )) %>%
+      mutate(구 = case_when(
+        
+        시군 == "부천시" ~ NA,
+        TRUE ~ 구
+        
       ))
     
     FullData <- FullData %>% 
@@ -136,32 +142,54 @@ rawData_full <- getFullData()
 
 rawData_fullpower <- rawData_full %>%
   left_join(rawData_prm, by = c("유형")) %>%
-  left_join(cf_bySGG, by = c("지역")) %>%
-  mutate(발전용량 = 면적 / coefficient * c(ratio / 100),
+  left_join(cf_bySGG, by = c("시군")) %>%
+  mutate(발전용량 = 면적 / DensityFactor * c(AreaFactor / 100),
          발전량 = 발전용량 * 이용률 * 8760) %>%
-  select(-coefficient, -ratio, -이용률, -Units)
+  select(-DensityFactor, -AreaFactor, -이용률, -Units)
   
 
 
 ## LCOE by technology (원/kWh) ##
-rawData_LCOE_bySGGTech <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "LCOE_bySGGTech", col_names = T) 
+rawData_LCOE_bySGGTech <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "LCOE_bySGGTech", col_names = T) %>%
+  gather(-시군, -구, -Units, key = technology, value = LCOE)
 
 rawData_LCOE_bySGGTech_avg <- rawData_LCOE_bySGGTech %>%
-  gather(-시군구_1, -시군구_2, -Units, key = technology, value = LCOE) %>%
-  group_by(시군구_1, technology, Units) %>% summarize(LCOE = mean(LCOE)) %>%
-  rename(지역 = 시군구_1)
+  group_by(시군, technology, Units) %>% summarize(LCOE = mean(LCOE)) %>% ungroup()
 
 
-supplyCurve_test <- rawData_fullpower %>%
-  left_join(rawData_LCOE_bySGGTech_avg, by = c("지역", "technology")) %>%
-  filter(!is.na(LCOE))
+rawData_fullpower_wLCOE <- rawData_fullpower %>%
+  left_join(rawData_LCOE_bySGGTech, by = c("시군", "구", "technology")) %>%
+  select(-Units)
 
-supplyCurve_test_order <- supplyCurve_test %>%
+
+rawData_fullpower_wLCOE_ordered_YesSB <- rawData_fullpower_wLCOE %>%
   arrange(desc(발전량)) %>%
-  arrange(LCOE)
+  arrange(LCOE) %>%
+  filter(이격거리 == "Y") %>%
+  filter(유형 != '육상정수역')
 
 
-tt <- supplyCurve_test_order %>%
+rawData_fullpower_wLCOE_ordered_NoSB <- rawData_fullpower_wLCOE %>%
+  arrange(desc(발전량)) %>%
+  arrange(LCOE) %>%
+  filter(이격거리 == "N") %>%
+  filter(유형 != '육상정수역')
+
+
+### 전체 ###
+testGraph_YesSB <- rawData_fullpower_wLCOE_ordered_YesSB %>%
+  mutate(x1 = lag(cumsum(발전량)),
+         x2 = cumsum(발전량),
+         y1 = 0,
+         y2 = LCOE) %>%
+  mutate(x1 = case_when(
+    
+    is.na(x1) ~ 0,
+    TRUE ~ x1
+    
+  ))
+
+testGraph_NoSB <- rawData_fullpower_wLCOE_ordered_NoSB %>%
   mutate(x1 = lag(cumsum(발전량)),
          x2 = cumsum(발전량),
          y1 = 0,
@@ -176,10 +204,39 @@ tt <- supplyCurve_test_order %>%
 ggplot() + 
   scale_x_continuous(name="x") + 
   scale_y_continuous(name="y") +
-  geom_rect(data=tt, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, size = 0.1)
-  #facet_wrap(~유형)
-  #geom_text(data=tt, aes(x=x1+(x2-x1)/2, y=y1+(y2-y1)/2, label=r), size=4)
-  #opts(title="geom_rect", plot.title=theme_text(size=40, vjust=1.5))
+  geom_rect(data=testGraph_YesSB, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, linewidth = 0.1) +
+  geom_rect(data=testGraph_NoSB, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, linewidth = 0.1)
+#facet_wrap(~유형)
+#geom_text(data=tt, aes(x=x1+(x2-x1)/2, y=y1+(y2-y1)/2, label=r), size=4)
+#opts(title="geom_rect", plot.title=theme_text(size=40, vjust=1.5))
+
+
+### 유형별 ###
+rawData_fullpower_wLCOE_ordered_indType <- rawData_fullpower_wLCOE_ordered %>%
+  filter(유형 == "산업단지")
+
+testGraph <- rawData_fullpower_wLCOE_ordered_indType %>%
+  mutate(x1 = lag(cumsum(발전량)),
+         x2 = cumsum(발전량),
+         y1 = 0,
+         y2 = LCOE) %>%
+  mutate(x1 = case_when(
+    
+    is.na(x1) ~ 0,
+    TRUE ~ x1
+    
+  ))
+
+ggplot() + 
+  scale_x_continuous(name="x") + 
+  scale_y_continuous(name="y") +
+  geom_rect(data=testGraph, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, linewidth = 0.1)
+
+
+ggplot(data = testGraph, aes(x = x2,, y = y2)) +
+  geom_point() +
+  geom_path()
+
 
 
 ############# 유형별로 그려보기기 ############# 
