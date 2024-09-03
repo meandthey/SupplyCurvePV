@@ -3,7 +3,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(openxlsx)
-
+library(tidyverse)
 #library(ggmacc)
 
 
@@ -269,9 +269,15 @@ tt %>%
 
 
 
-###
+##### 농지 data import #####
+rawData_AgriArea <- read.csv("../data/농지/농지_이격거리미적용_시군구.csv",  header = T)
+rawData_AgriArea <- read.csv("../data/농지/농지_이격거리미적용_시군구.csv",  header = T, fileEncoding="UTF-8")
 
 
+rawData_AgriArea <- read_csv("../data/농지/농지_이격거리미적용_시군구.csv",  col_names = T)
+
+rawData_AgriArea %>%
+  select(rearea_02, ADM_SECT_C)
 
 
 
