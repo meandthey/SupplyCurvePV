@@ -6,7 +6,7 @@ library(openxlsx)
 library(tidyverse)
 #library(ggmacc)
 
-
+exRate <- 1300
 thous <- 10^(3) 
 mil <- 10^(6)
 SGG_order <- c("수원시", "용인시", "성남시", "부천시", "화성시", "안산시", "안양시", "평택시", "시흥시", "김포시",
@@ -139,6 +139,56 @@ getFullData <- function() {
 }
 
 rawData_full <- getFullData()
+rawData_full <- rawData_full %>%
+  mutate(유형 = case_when(
+    
+    유형 %in% c("공동주택아파트", "공동주택다세대연립") ~ "공동주택",
+    TRUE ~ 유형
+    
+  ))
+
+
+###### 농지 Area Data Import ###### Start
+
+#guess_encoding("../data/농지/경기도_시군구_코드.csv")
+#guess_encoding("../data/농지/농지_이격거리미적용_시군구.csv")
+#GG_SGG_code <- read_csv("../data/농지/경기도_시군구_코드.csv",  col_names = T, locale = locale(encoding = "EUC-KR"))
+GG_SGG_code <- read_csv("../data/농지/SGG_code.csv",  col_names = T, locale = locale(encoding = "EUC-KR"))
+rawData_AgriArea_NoSB <- read_csv("../data/농지/농지_이격거리미적용_시군구.csv",  col_names = T)
+rawData_AgriArea_YesSB <- read_csv("../data/농지/농지_이격거리적용_시군구.csv",  col_names = T)
+
+AgriArea_NoSB <- rawData_AgriArea_NoSB %>%
+  select(rearea_02, ADM_SECT_C) %>%
+  mutate(이격거리 = "N")
+
+
+AgriArea_YesSB <- rawData_AgriArea_YesSB %>%
+  select(rearea_02, ADM_SECT_C) %>%
+  mutate(이격거리 = "Y")
+
+AgriArea <- AgriArea_NoSB %>%
+  bind_rows(AgriArea_YesSB) 
+
+
+AgriArea_trmd <- AgriArea %>%
+  left_join(GG_SGG_code, by = c("ADM_SECT_C" = "구_code")) %>%
+  mutate(유형 = '농지',
+         technology = 'grdmtd_PV',
+         ID = c(1:nrow(.))) %>%
+  rename(면적 = rearea_02 ) %>%
+  select(유형, technology, ID, 시군, 구, 면적, 이격거리) %>%
+  mutate(구 = case_when(
+    
+    시군 == "부천시" ~ NA,
+    TRUE ~ 구
+    
+  ))
+
+
+###### 농지 Area Data Import ###### End
+
+rawData_full <- rawData_full %>%
+  bind_rows(AgriArea_trmd)
 
 rawData_fullpower <- rawData_full %>%
   left_join(rawData_prm, by = c("유형")) %>%
@@ -150,16 +200,114 @@ rawData_fullpower <- rawData_full %>%
 
 
 ## LCOE by technology (원/kWh) ##
+rawData_LCOE_byTech <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "LCOE_byTech", col_names = T, skip = 1)
+
 rawData_LCOE_bySGGTech <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "LCOE_bySGGTech", col_names = T) %>%
   gather(-시군, -구, -Units, key = technology, value = LCOE)
 
 rawData_LCOE_bySGGTech_avg <- rawData_LCOE_bySGGTech %>%
   group_by(시군, technology, Units) %>% summarize(LCOE = mean(LCOE)) %>% ungroup()
 
-
-rawData_fullpower_wLCOE <- rawData_fullpower %>%
+## 모든 부지 (주차장 제외)에 LCOE join ##
+rawData_fullpower_wLCOE_woParking <- rawData_fullpower %>%
+  filter(유형 != "주차장") %>%
   left_join(rawData_LCOE_bySGGTech, by = c("시군", "구", "technology")) %>%
+  select(-Units) %>%
+  
+  ## 육상정수역은 수상태양광 LCOE 값 하나로 모두 통일.
+  mutate(LCOE = case_when(
+    
+    유형 == "육상정수역" ~ rawData_LCOE_byTech %>% filter(technology == 'flt_PV') %>% pull(LCOE),
+    TRUE ~ LCOE
+    
+  ))
+
+## 주차장 부지에 LCOE join ##
+rawData_fullpower_wLCOE_Parking <- rawData_fullpower %>%
+  filter(유형 == "주차장") %>%
+  left_join(rawData_LCOE_bySGGTech_avg, by = c("시군", "technology")) %>%
   select(-Units)
+
+
+rawData_fullpower_wLCOE <- rawData_fullpower_wLCOE_woParking %>%
+  bind_rows(rawData_fullpower_wLCOE_Parking)
+  
+
+
+### Making Summary Table ### by LandType
+rawData_fullpower_wLCOE_forTable_byLandType <- rawData_fullpower_wLCOE %>%
+  mutate(TC = 발전량 * LCOE) %>%
+  group_by(유형, 이격거리) %>% 
+  summarize(면적 = sum(면적),
+            발전용량 = sum(발전용량),
+            발전량 = sum(발전량),
+            TC = sum(TC)) %>% ungroup() %>%
+  mutate(avgLCOE = TC/발전량) %>%
+  mutate(면적 = 면적/10^(6), # m2 to km2
+         발전용량 = 발전용량/10^(6), # kW to GW
+         발전량 = 발전량 / 10^(9),   # kWh to TWh
+         TC = TC / exRate / 10^(6),  # Won to Mil.USD
+         avgLCOE = avgLCOE / exRate) # Won to USD
+
+### Making Summary Table ### by Total
+rawData_fullpower_wLCOE_forTable_byTotal <- rawData_fullpower_wLCOE_forTable_byLandType %>%
+  group_by(이격거리) %>% 
+  summarize(면적 = sum(면적),
+            발전용량 = sum(발전용량),
+            발전량 = sum(발전량),
+            TC = sum(TC)) %>% ungroup() %>%
+  mutate(avgLCOE = TC / 발전량) %>%
+  mutate(유형 = '전체', .before = 이격거리)
+
+rawData_fullpower_wLCOE_forTable <- rawData_fullpower_wLCOE_forTable_byLandType %>%
+  bind_rows(rawData_fullpower_wLCOE_forTable_byTotal)
+
+
+summary_byLandType_forTable_NoSB <- rawData_fullpower_wLCOE_forTable %>%
+  filter(이격거리 =="N")
+
+summary_byLandType_forTable_YesSB <- rawData_fullpower_wLCOE_forTable %>%
+  filter(이격거리 =="Y")
+
+
+
+
+
+
+# 면적: km2, 발전용량: GW, 발전량: TWh, TC: Milion USD, avgLCOE: USD/kWh
+finalSummary_byLandType_forTable <- summary_byLandType_forTable_NoSB %>%
+  left_join(summary_byLandType_forTable_YesSB, by = c("유형")) %>%
+  mutate(면적_diff = 면적.y - 면적.x,
+         면적_diffR = 100 * c(면적_diff / 면적.x),
+         
+         발전용량_diff = 발전용량.y - 발전용량.x,
+         발전용량_diffR = 100 * c(발전용량_diff / 발전용량.x),
+         
+         발전량_diff = 발전량.y - 발전량.x,
+         발전량_diffR = 100 * c(발전량_diff / 발전량.x),
+         
+         TC_diff = TC.y - TC.x,
+         TC_diffR = 100 * c(TC_diff / TC.x),
+         
+         avgLCOE_diff = avgLCOE.y - avgLCOE.x,
+         avgLCOE_diffR = 100 * c(avgLCOE_diff / avgLCOE.x)) %>%
+  select(유형, 
+         면적.x, 면적.y, 면적_diff, 면적_diffR, 
+         발전용량.x, 발전용량.y, 발전용량_diff, 발전용량_diffR,
+         발전량.x, 발전량.y, 발전량_diff, 발전량_diffR,
+         TC.x, TC.y, TC_diff, TC_diffR,
+         avgLCOE.x, avgLCOE.y, avgLCOE_diff, avgLCOE_diffR) %>%
+  arrange(발전용량.x)
+
+
+
+
+  
+
+
+
+
+
 
 
 rawData_fullpower_wLCOE_ordered_YesSB <- rawData_fullpower_wLCOE %>%
@@ -274,10 +422,7 @@ rawData_AgriArea <- read.csv("../data/농지/농지_이격거리미적용_시군
 rawData_AgriArea <- read.csv("../data/농지/농지_이격거리미적용_시군구.csv",  header = T, fileEncoding="UTF-8")
 
 
-rawData_AgriArea <- read_csv("../data/농지/농지_이격거리미적용_시군구.csv",  col_names = T)
 
-rawData_AgriArea %>%
-  select(rearea_02, ADM_SECT_C)
 
 
 
