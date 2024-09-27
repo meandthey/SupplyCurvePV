@@ -23,45 +23,47 @@ SGG_South <- c("수원시", "용인시", "성남시", "부천시", "화성시", 
 
 SGG_North <- c("고양시", "남양주시", "파주시", "의정부시", "양주시", "구리시", "포천시", "동두천시", "가평군",
                "연천군")
+
+
 ## makeFullname ##
 makeFullname <- function(data) {
   
   target <- data %>%
-    mutate(시군 = case_when(
+    mutate(SiGun = case_when(
       
-      시군 == "가평" ~ "가평군",
-      시군 == "고양" ~ "고양시",
-      시군 == "과천" ~ "과천시",
-      시군 == "광명" ~ "광명시",
-      시군 == "광주" ~ "광주시",
-      시군 == "구리" ~ "구리시",
-      시군 == "군포" ~ "군포시",
-      시군 == "김포" ~ "김포시",
-      시군 == "남양주" ~ "남양주시",
-      시군 == "동두천" ~ "동두천시",
-      시군 == "부천" ~ "부천시",
-      시군 == "성남" ~ "성남시",
-      시군 == "수원" ~ "수원시",
-      시군 == "시흥" ~ "시흥시",
-      시군 == "안산" ~ "안산시",
-      시군 == "안양" ~ "안양시",
-      시군 == "양주" ~ "양주시",
-      시군 == "양평" ~ "양평군",
-      시군 == "여주" ~ "여주시",
-      시군 == "연천" ~ "연천군",
-      시군 == "오산" ~ "오산시",
-      시군 == "용인" ~ "용인시",
-      시군 == "의왕" ~ "의왕시",
-      시군 == "의정부" ~ "의정부시",
-      시군 == "이천" ~ "이천시",
-      시군 == "파주" ~ "파주시",
-      시군 == "평택" ~ "평택시",
-      시군 == "포천" ~ "포천시",
-      시군 == "하남" ~ "하남시",
-      시군 == "화성" ~ "화성시",
-      시군 == "안성" ~ "안성시",
+      SiGun == "가평" ~ "가평군",
+      SiGun == "고양" ~ "고양시",
+      SiGun == "과천" ~ "과천시",
+      SiGun == "광명" ~ "광명시",
+      SiGun == "광주" ~ "광주시",
+      SiGun == "구리" ~ "구리시",
+      SiGun == "군포" ~ "군포시",
+      SiGun == "김포" ~ "김포시",
+      SiGun == "남양주" ~ "남양주시",
+      SiGun == "동두천" ~ "동두천시",
+      SiGun == "부천" ~ "부천시",
+      SiGun == "성남" ~ "성남시",
+      SiGun == "수원" ~ "수원시",
+      SiGun == "시흥" ~ "시흥시",
+      SiGun == "안산" ~ "안산시",
+      SiGun == "안양" ~ "안양시",
+      SiGun == "양주" ~ "양주시",
+      SiGun == "양평" ~ "양평군",
+      SiGun == "여주" ~ "여주시",
+      SiGun == "연천" ~ "연천군",
+      SiGun == "오산" ~ "오산시",
+      SiGun == "용인" ~ "용인시",
+      SiGun == "의왕" ~ "의왕시",
+      SiGun == "의정부" ~ "의정부시",
+      SiGun == "이천" ~ "이천시",
+      SiGun == "파주" ~ "파주시",
+      SiGun == "평택" ~ "평택시",
+      SiGun == "포천" ~ "포천시",
+      SiGun == "하남" ~ "하남시",
+      SiGun == "화성" ~ "화성시",
+      SiGun == "안성" ~ "안성시",
       
-      TRUE ~ 시군
+      TRUE ~ SiGun
       
     ))
   
@@ -89,6 +91,33 @@ writeExcel <- function(fileName, dataName, Name) {
   
 }
 
+
+TypeToEng <- function(data) {
+  
+  engData <- data %>%
+    mutate(LandType = case_when(
+      
+      LandType == "산업단지" ~ "Industrial complex",
+      LandType == "물류단지" ~ "Logistics complex",
+      LandType == "공동주택" ~ "Residential complex",
+      LandType == "공공건축물" ~ "Public buildings",
+      LandType == "산지" ~ "Mountainous area",
+      LandType == "농지" ~ "Farmland",
+      LandType == "주차장" ~ "Parking lot",
+      LandType == "도로유휴부지" ~ "Roadside land",
+      LandType == "육상정수역" ~ "Water"
+      
+    )) %>%
+    mutate(LandType = factor(LandType, levels = c("Industrial complex", "Logistics complex", "Residential complex", "Public buildings",
+                                         "Mountainous area", "Farmland", "Parking lot", "Roadside land", "Water"))) %>%
+
+  
+  return(engData)
+  
+}
+
+
+
 ## 필요면적: m2/kW, 시나리오:
 rawData_prm <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "parameter", col_names = T, skip = 1) 
 
@@ -97,15 +126,15 @@ rawData_prm <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "
 rawData_cf <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "CF", col_names = T, skip = 1) 
 
 cf_bySGG <- rawData_cf %>%
-  group_by(시군) %>% summarize(이용률 = mean(이용률)) %>% ungroup() %>%
-  mutate(이용률 = round(이용률, digit = 2),
-         이용률 = 이용률 / 100,
+  group_by(SiGun) %>% summarize(CapacityFactor = mean(CapacityFactor)) %>% ungroup() %>%
+  mutate(CapacityFactor = round(CapacityFactor, digit = 2),
+         CapacityFactor = CapacityFactor / 100,
          Units = 'ratio')
-cf_avg <- mean(cf_bySGG$이용률)
+cf_avg <- mean(cf_bySGG$CapacityFactor)
 
 
 ## Area (m2) ##
-LandList <- excel_sheets("../data/totalData_individual.xlsx")[!excel_sheets("../data/totalData_individual.xlsx") %in% c("LCOE_byTech","LCOE_bySGGTech","parameter", "CF")]
+LandList <- excel_sheets("../data/totalData_individual.xlsx")[!excel_sheets("../data/totalData_individual.xlsx") %in% c("LCOE_byTech","LCOE_bySGGTech","parameter", "CF", "setbackRegion")]
 
 
 getFullData <- function() {
@@ -116,16 +145,16 @@ getFullData <- function() {
     eachData <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = LandList[i], col_names = T)
     
     eachData <- eachData %>%
-      mutate(이격거리 = case_when(
+      mutate(Scenario = case_when(
         
-        grepl("이격거리규제없음", LandList[i]) ~ "N",
-        TRUE ~ "Y"
+        grepl("이격거리규제없음", LandList[i]) ~ "No setbacks",
+        TRUE ~ "Setbacks"
         
       )) %>%
-      mutate(구 = case_when(
+      mutate(Gu = case_when(
         
-        시군 == "부천시" ~ NA,
-        TRUE ~ 구
+        SiGun == "부천시" ~ NA,
+        TRUE ~ Gu
         
       ))
     
@@ -140,10 +169,10 @@ getFullData <- function() {
 
 rawData_full <- getFullData()
 rawData_full <- rawData_full %>%
-  mutate(유형 = case_when(
+  mutate(LandType = case_when(
     
-    유형 %in% c("공동주택아파트", "공동주택다세대연립") ~ "공동주택",
-    TRUE ~ 유형
+    LandType %in% c("공동주택아파트", "공동주택다세대연립") ~ "공동주택",
+    TRUE ~ LandType
     
   ))
 
@@ -159,12 +188,12 @@ rawData_AgriArea_YesSB <- read_csv("../data/농지/농지_이격거리적용_시
 
 AgriArea_NoSB <- rawData_AgriArea_NoSB %>%
   select(rearea_02, ADM_SECT_C) %>%
-  mutate(이격거리 = "N")
+  mutate(Scenario = "No setbacks")
 
 
 AgriArea_YesSB <- rawData_AgriArea_YesSB %>%
   select(rearea_02, ADM_SECT_C) %>%
-  mutate(이격거리 = "Y")
+  mutate(Scenario = "Setbacks")
 
 AgriArea <- AgriArea_NoSB %>%
   bind_rows(AgriArea_YesSB) 
@@ -172,15 +201,17 @@ AgriArea <- AgriArea_NoSB %>%
 
 AgriArea_trmd <- AgriArea %>%
   left_join(GG_SGG_code, by = c("ADM_SECT_C" = "구_code")) %>%
-  mutate(유형 = '농지',
-         technology = 'grdmtd_PV',
+  mutate(LandType = '농지',
+         Technology = 'grdmtd_PV',
          ID = c(1:nrow(.))) %>%
-  rename(면적 = rearea_02 ) %>%
-  select(유형, technology, ID, 시군, 구, 면적, 이격거리) %>%
-  mutate(구 = case_when(
+  rename(Area = rearea_02,
+         SiGun = 시군,
+         Gu = 구) %>%
+  select(LandType, Technology, ID, SiGun, Gu, Area, Scenario) %>%
+  mutate(Gu = case_when(
     
-    시군 == "부천시" ~ NA,
-    TRUE ~ 구
+    SiGun == "부천시" ~ NA,
+    TRUE ~ Gu
     
   ))
 
@@ -191,11 +222,11 @@ rawData_full <- rawData_full %>%
   bind_rows(AgriArea_trmd)
 
 rawData_fullpower <- rawData_full %>%
-  left_join(rawData_prm, by = c("유형")) %>%
-  left_join(cf_bySGG, by = c("시군")) %>%
-  mutate(발전용량 = 면적 / DensityFactor * c(AreaFactor / 100),
-         발전량 = 발전용량 * 이용률 * 8760) %>%
-  select(-DensityFactor, -AreaFactor, -이용률, -Units)
+  left_join(rawData_prm, by = c("LandType")) %>%
+  left_join(cf_bySGG, by = c("SiGun")) %>%
+  mutate(Capacity = Area / DensityFactor * c(AreaFactor / 100),
+         Generation = Capacity * CapacityFactor * 8760) %>%
+  select(-DensityFactor, -AreaFactor, -CapacityFactor, -Units)
   
 
 
@@ -203,61 +234,152 @@ rawData_fullpower <- rawData_full %>%
 rawData_LCOE_byTech <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "LCOE_byTech", col_names = T, skip = 1)
 
 rawData_LCOE_bySGGTech <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "LCOE_bySGGTech", col_names = T) %>%
-  gather(-시군, -구, -Units, key = technology, value = LCOE)
+  gather(-SiGun, -Gu, -Units, key = Technology, value = LCOE)
 
 rawData_LCOE_bySGGTech_avg <- rawData_LCOE_bySGGTech %>%
-  group_by(시군, technology, Units) %>% summarize(LCOE = mean(LCOE)) %>% ungroup()
+  group_by(SiGun, Technology, Units) %>% summarize(LCOE = mean(LCOE)) %>% ungroup()
 
 ## 모든 부지 (주차장 제외)에 LCOE join ##
 rawData_fullpower_wLCOE_woParking <- rawData_fullpower %>%
-  filter(유형 != "주차장") %>%
-  left_join(rawData_LCOE_bySGGTech, by = c("시군", "구", "technology")) %>%
+  filter(LandType != "주차장") %>%
+  left_join(rawData_LCOE_bySGGTech, by = c("SiGun", "Gu", "Technology")) %>%
   select(-Units) %>%
   
   ## 육상정수역은 수상태양광 LCOE 값 하나로 모두 통일.
   mutate(LCOE = case_when(
     
-    유형 == "육상정수역" ~ rawData_LCOE_byTech %>% filter(technology == 'flt_PV') %>% pull(LCOE),
+    LandType == "육상정수역" ~ rawData_LCOE_byTech %>% filter(Technology == 'flt_PV') %>% pull(LCOE),
     TRUE ~ LCOE
     
   ))
 
 ## 주차장 부지에 LCOE join ##
 rawData_fullpower_wLCOE_Parking <- rawData_fullpower %>%
-  filter(유형 == "주차장") %>%
-  left_join(rawData_LCOE_bySGGTech_avg, by = c("시군", "technology")) %>%
+  filter(LandType == "주차장") %>%
+  left_join(rawData_LCOE_bySGGTech_avg, by = c("SiGun", "Technology")) %>%
   select(-Units)
 
 
 rawData_fullpower_wLCOE <- rawData_fullpower_wLCOE_woParking %>%
   bind_rows(rawData_fullpower_wLCOE_Parking)
   
+setbackRegion <- readxl::read_excel("../data/totalData_individual.xlsx", sheet = "setbackRegion", col_names = T, skip = 0)
+
+totalData <- rawData_fullpower_wLCOE %>%
+  mutate(TC = Generation * LCOE) %>%
+  mutate(avgLCOE = TC/Generation) %>%
+  mutate(Area = Area/10^(6), # m2 to km2
+         Capacity = Capacity/10^(6), # kW to GW
+         Generation = Generation / 10^(9),   # kWh to TWh
+         TC = TC / exRate / 10^(6),  # Won to Mil.USD
+         avgLCOE = avgLCOE / exRate) %>% # Won to USD
+  mutate(setbackRegion = case_when(
+    
+    SiGun %in% setbackRegion$setbackRegion ~ 'setbackRegion',
+    TRUE ~ 'No setbackRegion'
+    
+  ))
+
+  
+
+
+
+
+######## Clear Data Set end ######## 
+
+
+
+## percent Matrix (LandType * SiGun)
+test <- totalData %>%
+  filter(Scenario == 'No setbacks') %>%
+  group_by(LandType, SiGun, setbackRegion) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
+  group_by(setbackRegion) %>% mutate(share = 100 * Generation / sum(Generation)) %>% ungroup()
+
+
+
+
+test <- totalData %>%
+  filter(Scenario == 'No setbacks') %>%
+  group_by(LandType, SiGun) %>% summarize(Generation = sum(Generation)) %>%
+  mutate(setbackRegion = case_when(
+    
+    SiGun %in% setbackRegion$setbackRegion ~ 'setbackRegion',
+    TRUE ~ 'No setbackRegion'
+    
+  )) %>% ungroup() %>%
+  mutate(share = 100 * Generation / sum(Generation)) %>%
+  select(-Generation) %>%
+  spread( key = LandType, value = share)
+  
+
+  
+
+
+
+
+
+
+
+
+
 
 
 ### Making Summary Table ### by LandType
-rawData_fullpower_wLCOE_forTable_byLandType <- rawData_fullpower_wLCOE %>%
-  mutate(TC = 발전량 * LCOE) %>%
-  group_by(유형, 이격거리) %>% 
-  summarize(면적 = sum(면적),
-            발전용량 = sum(발전용량),
-            발전량 = sum(발전량),
-            TC = sum(TC)) %>% ungroup() %>%
-  mutate(avgLCOE = TC/발전량) %>%
-  mutate(면적 = 면적/10^(6), # m2 to km2
-         발전용량 = 발전용량/10^(6), # kW to GW
-         발전량 = 발전량 / 10^(9),   # kWh to TWh
-         TC = TC / exRate / 10^(6),  # Won to Mil.USD
-         avgLCOE = avgLCOE / exRate) # Won to USD
+rawData_fullpower_wLCOE_forTable_byLandType <- totalData %>%
+  group_by(LandType, Scenario) %>% 
+  summarize(Area = sum(Area),
+            Capacity = sum(Capacity),
+            Generation = sum(Generation),
+            TC = sum(TC)) %>% ungroup()
+  
+
+
+
+
+##### Draw total graph fill by Land ##### Fig1.
+graphData <- rawData_fullpower_wLCOE_forTable_byLandType %>%
+  select(-TC, -avgLCOE) %>%
+  gather(key = variable, value = value, -LandType, -Scenario) %>%
+  TypeToEng()
+
+ggplot(data = graphData %>% mutate(variable = factor(variable, levels = c("Area", "Capacity", "Generation"))), aes(x =  Scenario, y = value, fill = LandType)) +
+  geom_bar(stat='identity') +
+  facet_wrap(~variable, scales = 'free') +
+  theme(legend.position = "right",
+        #axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1),
+        text = element_text(size = 40))
+
+
+graphData_gen <- graphData %>%
+  filter(variable == 'Generation')
+
+ggplot(data = graphData_gen, aes(x =  Scenario, y = value, fill = LandType)) +
+  geom_bar(stat='identity') +
+  facet_wrap(~LandType, scales = 'free', nrow = 2) +
+  theme(legend.position = "right",
+        #axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1),
+        text = element_text(size = 40))
+
+graphData_gen %>%
+  spread(key = Scenario, value = value) %>%
+  mutate(reducRate = 100 * c(`No setbacks` - `Setbacks`) / `No setbacks`)
+
 
 ### Making Summary Table ### by Total
 rawData_fullpower_wLCOE_forTable_byTotal <- rawData_fullpower_wLCOE_forTable_byLandType %>%
-  group_by(이격거리) %>% 
-  summarize(면적 = sum(면적),
-            발전용량 = sum(발전용량),
-            발전량 = sum(발전량),
+  group_by(Scenario) %>% 
+  summarize(Area = sum(Area),
+            Capacity = sum(Capacity),
+            Generation = sum(Generation),
             TC = sum(TC)) %>% ungroup() %>%
-  mutate(avgLCOE = TC / 발전량) %>%
-  mutate(유형 = '전체', .before = 이격거리)
+  mutate(avgLCOE = TC / Generation) %>%
+  mutate(LandType = '전체', .before = Scenario)
 
 rawData_fullpower_wLCOE_forTable <- rawData_fullpower_wLCOE_forTable_byLandType %>%
   bind_rows(rawData_fullpower_wLCOE_forTable_byTotal)
@@ -268,6 +390,12 @@ summary_byLandType_forTable_NoSB <- rawData_fullpower_wLCOE_forTable %>%
 
 summary_byLandType_forTable_YesSB <- rawData_fullpower_wLCOE_forTable %>%
   filter(이격거리 =="Y")
+
+###########################################
+
+
+
+
 
 
 
@@ -310,14 +438,14 @@ finalSummary_byLandType_forTable <- summary_byLandType_forTable_NoSB %>%
 
 
 
-rawData_fullpower_wLCOE_ordered_YesSB <- rawData_fullpower_wLCOE %>%
+rawData_fullpower_wLCOE_ordered_YesSB <- totalData %>%
   arrange(desc(발전량)) %>%
   arrange(LCOE) %>%
   filter(이격거리 == "Y") %>%
   filter(유형 != '육상정수역')
 
 
-rawData_fullpower_wLCOE_ordered_NoSB <- rawData_fullpower_wLCOE %>%
+rawData_fullpower_wLCOE_ordered_NoSB <- totalData %>%
   arrange(desc(발전량)) %>%
   arrange(LCOE) %>%
   filter(이격거리 == "N") %>%
