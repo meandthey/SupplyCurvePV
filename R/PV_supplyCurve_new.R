@@ -6,6 +6,10 @@ library(openxlsx)
 library(tidyverse)
 #library(ggmacc)
 
+
+## Setback Regulation 없는 지역은, setback 있을때랑 없을때 data를 똑같게 만듬.
+##  포천시 산지, 동두천시 산지
+
 exRate <- 1300
 thous <- 10^(3) 
 mil <- 10^(6)
@@ -198,7 +202,7 @@ AgriArea_YesSB <- rawData_AgriArea_YesSB %>%
 AgriArea <- AgriArea_NoSB %>%
   bind_rows(AgriArea_YesSB) 
 
-
+# trmd: trimmed
 AgriArea_trmd <- AgriArea %>%
   left_join(GG_SGG_code, by = c("ADM_SECT_C" = "구_code")) %>%
   mutate(LandType = '농지',
@@ -280,42 +284,43 @@ totalData <- rawData_fullpower_wLCOE %>%
     
   ))
 
-  
-
-
-
 
 ######## Clear Data Set end ######## 
 
 
+### How would many capacity be reduced by setback regulation? ### by SiGunGu
+rawData_fullpower_forTable_bySGG <- totalData %>%
+  group_by(SiGun, LandType, Scenario) %>% 
+  summarize(Area = sum(Area),
+            Capacity = sum(Capacity),
+            Generation = sum(Generation),
+            TC = sum(TC)) %>% ungroup()
 
-## percent Matrix (LandType * SiGun)
-test <- totalData %>%
-  filter(Scenario == 'No setbacks') %>%
-  group_by(LandType, SiGun, setbackRegion) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
-  group_by(setbackRegion) %>% mutate(share = 100 * Generation / sum(Generation)) %>% ungroup()
+rawData_fullpower_forTable_bySGG_NoSB <- rawData_fullpower_forTable_bySGG %>%
+  filter(Scenario == "No setbacks")
 
 
+rawData_fullpower_forTable_bySGG_YesSB <- rawData_fullpower_forTable_bySGG %>%
+  filter(Scenario == "Setbacks")
 
 
-test <- totalData %>%
-  filter(Scenario == 'No setbacks') %>%
-  group_by(LandType, SiGun) %>% summarize(Generation = sum(Generation)) %>%
-  mutate(setbackRegion = case_when(
-    
-    SiGun %in% setbackRegion$setbackRegion ~ 'setbackRegion',
-    TRUE ~ 'No setbackRegion'
-    
-  )) %>% ungroup() %>%
-  mutate(share = 100 * Generation / sum(Generation)) %>%
-  select(-Generation) %>%
-  spread( key = LandType, value = share)
-  
+graphData <- rawData_fullpower_forTable_bySGG_NoSB %>%
+  left_join(rawData_fullpower_forTable_bySGG_YesSB, by = c("SiGun", "LandType")) %>%
+  mutate(diff_SCN = Capacity.x - Capacity.y) %>%
+  select(SiGun, LandType, diff_SCN)
 
   
 
 
-
+ggplot(data = graphData, aes(x =  SiGun, y = diff_SCN, fill = LandType)) +
+  geom_bar(stat='identity') +
+  #facet_wrap(~variable, scales = 'free') +
+  theme(legend.position = "right",
+        #axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1),
+        text = element_text(size = 40))
 
 
 
@@ -325,7 +330,7 @@ test <- totalData %>%
 
 
 ### Making Summary Table ### by LandType
-rawData_fullpower_wLCOE_forTable_byLandType <- totalData %>%
+rawData_fullpower_forTable_byLandType <- totalData %>%
   group_by(LandType, Scenario) %>% 
   summarize(Area = sum(Area),
             Capacity = sum(Capacity),
@@ -333,12 +338,9 @@ rawData_fullpower_wLCOE_forTable_byLandType <- totalData %>%
             TC = sum(TC)) %>% ungroup()
   
 
-
-
-
 ##### Draw total graph fill by Land ##### Fig1.
-graphData <- rawData_fullpower_wLCOE_forTable_byLandType %>%
-  select(-TC, -avgLCOE) %>%
+graphData <- rawData_fullpower_forTable_byLandType %>%
+  select(-TC) %>%
   gather(key = variable, value = value, -LandType, -Scenario) %>%
   TypeToEng()
 
@@ -372,7 +374,7 @@ graphData_gen %>%
 
 
 ### Making Summary Table ### by Total
-rawData_fullpower_wLCOE_forTable_byTotal <- rawData_fullpower_wLCOE_forTable_byLandType %>%
+rawData_fullpower_wLCOE_forTable_byTotal <- rawData_fullpower_forTable_byLandType %>%
   group_by(Scenario) %>% 
   summarize(Area = sum(Area),
             Capacity = sum(Capacity),
@@ -381,7 +383,7 @@ rawData_fullpower_wLCOE_forTable_byTotal <- rawData_fullpower_wLCOE_forTable_byL
   mutate(avgLCOE = TC / Generation) %>%
   mutate(LandType = '전체', .before = Scenario)
 
-rawData_fullpower_wLCOE_forTable <- rawData_fullpower_wLCOE_forTable_byLandType %>%
+rawData_fullpower_wLCOE_forTable <- rawData_fullpower_forTable_byLandType %>%
   bind_rows(rawData_fullpower_wLCOE_forTable_byTotal)
 
 
@@ -392,6 +394,30 @@ summary_byLandType_forTable_YesSB <- rawData_fullpower_wLCOE_forTable %>%
   filter(이격거리 =="Y")
 
 ###########################################
+
+
+
+## percent Matrix (LandType * SiGun)
+test <- totalData %>%
+  filter(Scenario == 'No setbacks') %>%
+  group_by(LandType, SiGun, setbackRegion) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
+  group_by(setbackRegion) %>% mutate(share = 100 * Generation / sum(Generation)) %>% ungroup()
+
+
+
+
+test <- totalData %>%
+  filter(Scenario == 'No setbacks') %>%
+  group_by(LandType, SiGun) %>% summarize(Generation = sum(Generation)) %>%
+  mutate(setbackRegion = case_when(
+    
+    SiGun %in% setbackRegion$setbackRegion ~ 'setbackRegion',
+    TRUE ~ 'No setbackRegion'
+    
+  )) %>% ungroup() %>%
+  mutate(share = 100 * Generation / sum(Generation)) %>%
+  select(-Generation) %>%
+  spread( key = LandType, value = share)
 
 
 
