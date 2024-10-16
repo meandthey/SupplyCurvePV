@@ -6,9 +6,9 @@ library(openxlsx)
 library(tidyverse)
 #library(ggmacc)
 
-
+##### Setback을 적용 시키고 난 후에 오히려 면적이 더 커지는 경우는 아래와 같이 처리함. #####
 ## Setback Regulation 없는 지역은, setback 있을때랑 없을때 data를 똑같게 만듬.
-##  포천시 산지, 동두천시 산지
+## Setback이 있는 지역 중에 Setback 적용 이후의 면적이 더 큰 경우는 -> 포천시 산지, 동두천시 산지
 
 exRate <- 1300
 thous <- 10^(3) 
@@ -101,19 +101,29 @@ TypeToEng <- function(data) {
   engData <- data %>%
     mutate(LandType = case_when(
       
-      LandType == "산업단지" ~ "Industrial complex",
-      LandType == "물류단지" ~ "Logistics complex",
-      LandType == "공동주택" ~ "Residential complex",
-      LandType == "공공건축물" ~ "Public buildings",
-      LandType == "산지" ~ "Mountainous area",
+      # LandType == "산업단지" ~ "Industrial complex",
+      # LandType == "물류단지" ~ "Logistics complex",
+      # LandType == "공동주택" ~ "Residential complex",
+      # LandType == "공공건축물" ~ "Public buildings",
+      # LandType == "산지" ~ "Mountainous area",
+      # LandType == "농지" ~ "Farmland",
+      # LandType == "주차장" ~ "Parking lot",
+      # LandType == "도로유휴부지" ~ "Roadside land",
+      # LandType == "육상정수역" ~ "Water"
+      
+      LandType == "산업단지" ~ "Industrial",
+      LandType == "물류단지" ~ "Logistics",
+      LandType == "공동주택" ~ "Residential",
+      LandType == "공공건축물" ~ "Public",
+      LandType == "산지" ~ "Mountain",
       LandType == "농지" ~ "Farmland",
-      LandType == "주차장" ~ "Parking lot",
-      LandType == "도로유휴부지" ~ "Roadside land",
+      LandType == "주차장" ~ "Parking",
+      #LandType == "도로유휴부지" ~ "Roadside land",
       LandType == "육상정수역" ~ "Water"
       
-    )) %>%
-    mutate(LandType = factor(LandType, levels = c("Industrial complex", "Logistics complex", "Residential complex", "Public buildings",
-                                         "Mountainous area", "Farmland", "Parking lot", "Roadside land", "Water"))) %>%
+    ))
+    # mutate(LandType = factor(LandType, levels = c("Industrial complex", "Logistics complex", "Residential complex", "Public buildings",
+    #                                      "Mountainous area", "Farmland", "Parking lot", "Roadside land", "Water"))) %>%
 
   
   return(engData)
@@ -225,6 +235,23 @@ AgriArea_trmd <- AgriArea %>%
 rawData_full <- rawData_full %>%
   bind_rows(AgriArea_trmd)
 
+
+
+
+##### Data Manipulation #####
+# rawData_full_NoSB <- rawData_full %>%
+#   filter(Scenario == "No setbacks")
+# 
+# rawData_full_YesSB <- rawData_full %>%
+#   filter(Scenario == "Setbacks")
+# 
+# test <- rawData_full_NoSB %>%
+#   left_join(rawData_full_YesSB, by = c("LandType", "Technology","SiGun", "Gu"))
+# 
+# 
+# 
+# 
+# 
 rawData_fullpower <- rawData_full %>%
   left_join(rawData_prm, by = c("LandType")) %>%
   left_join(cf_bySGG, by = c("SiGun")) %>%
@@ -285,10 +312,284 @@ totalData <- rawData_fullpower_wLCOE %>%
   ))
 
 
-######## Clear Data Set end ######## 
+######## Data Manipulation due to mismatch GIS data ######## 
+totalData_woID <- totalData %>%
+  group_by(LandType, Technology, SiGun, Scenario, setbackRegion) %>%
+  summarize(Area = sum(Area),
+            Capacity = sum(Capacity),
+            Generation = sum(Generation),
+            TC = sum(TC)) %>% ungroup()
+
+  
+
+totalData_woID_YesSB <- totalData_woID %>%
+  filter(Scenario =='Setbacks')
+
+totalData_woID_NoSB <- totalData_woID %>%
+  filter(Scenario =='No setbacks')
+
+totalData_woID_YesSB_NoSB <-  totalData_woID_NoSB %>%
+  left_join(totalData_woID_YesSB, by = c("LandType", "Technology", "SiGun"))
+
+totalData_woID_temp <- totalData_woID_YesSB_NoSB %>%
+  mutate(Area.y = case_when(
+    
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'No setbackRegion' ~ Area.x,
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Area.y > Area.x ~ Area.x,
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Area.y <= Area.x ~ Area.y,
+    TRUE ~ 0
+    
+  )) %>%
+  mutate(Capacity.y = case_when(
+    
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'No setbackRegion' ~ Capacity.x,
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Capacity.y > Capacity.x ~ Capacity.x,
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Capacity.y <= Capacity.x ~ Capacity.y,
+    TRUE ~ 0
+    
+  )) %>%
+  mutate(Generation.y = case_when(
+    
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'No setbackRegion' ~ Generation.x,
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Generation.y > Generation.x ~ Generation.x,
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Generation.y <= Generation.x ~ Generation.y,
+    TRUE ~ 0
+    
+  )) %>%
+  mutate(TC.y = case_when(
+    
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'No setbackRegion' ~ TC.x,
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & TC.y > TC.x ~ TC.x,
+    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & TC.y <= TC.x ~ TC.y,
+    TRUE ~ 0
+    
+  )) %>%
+  mutate(Scenario.y = case_when(
+    
+    is.na(Scenario.y) ~ 'Setbacks',
+    TRUE ~ Scenario.y
+    
+  )) %>%
+  mutate(setbackRegion.y = case_when(
+    
+    is.na(setbackRegion.y) ~ 'setbackRegion',
+    TRUE ~ setbackRegion.y
+    
+  ))
+  
+
+totalData_woID_temp_NoSB <- totalData_woID_temp %>%
+  select(LandType, Technology, SiGun, Scenario.x, setbackRegion.x, Area.x, Capacity.x, Generation.x, TC.x) %>%
+  rename(Scenario = Scenario.x,
+         setbackRegion = setbackRegion.x,
+         Area = Area.x,
+         Capacity = Capacity.x,
+         Generation = Generation.x,
+         TC = TC.x)
+  
+
+totalData_woID_temp_YesSB <- totalData_woID_temp %>%
+  select(LandType, Technology, SiGun, Scenario.y, setbackRegion.y, Area.y, Capacity.y, Generation.y, TC.y) %>%
+  rename(Scenario = Scenario.y,
+         setbackRegion = setbackRegion.y,
+         Area = Area.y,
+         Capacity = Capacity.y,
+         Generation = Generation.y,
+         TC = TC.y)
+
+totalData_woID_mnpt <- totalData_woID_temp_NoSB %>%
+  bind_rows(totalData_woID_temp_YesSB)
 
 
-### How would many capacity be reduced by setback regulation? ### by SiGunGu
+
+######################################
+######## [End] Clear Data Set ######## 
+######################################
+
+
+
+
+
+### How much would generation be reduced by setback regulation? ### by LandType including both setback and Nosetback
+
+totalData_woID_mnpt_NoSB <- totalData_woID_mnpt %>%
+  filter(Scenario == 'No setbacks')
+
+totalData_woID_mnpt_YesSB <- totalData_woID_mnpt %>%
+  filter(Scenario == 'Setbacks')
+
+totalData_woID_mnpt_Reduction_byLandType <- totalData_woID_mnpt_NoSB %>%
+  left_join(totalData_woID_mnpt_YesSB, by = c("LandType", "Technology", "SiGun", "setbackRegion")) %>%
+  mutate(Generation.x = Generation.x - Generation.y,
+         Scenario.x = 'Reduction') %>%
+  rename(Scenario = Scenario.x,
+         Area = Area.x,
+         Capacity = Capacity.x,
+         Generation = Generation.x,
+         TC = TC.x) %>%
+  select(LandType, Scenario, Generation) # Area, TC 등 추가하면 됨
+
+graphData <- totalData_woID_mnpt_YesSB %>%
+  bind_rows(totalData_woID_mnpt_Reduction_byLandType) %>%
+  group_by(LandType, Scenario) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
+  TypeToEng() %>%
+  #mutate(LandType = factor(LandType, levels = c("산지", "공동주택", "농지", "산업단지", "육상정수역", "공공건축물", "물류단지", "주차장"))) %>%
+  # mutate(LandType = factor(LandType, levels = c("Residential complex", "Mountainous area", "Industrial complex", 
+  #                                               "Farmland",  "Water", "Public buildings", "Logistics complex", "Parking lot"))) %>%
+  mutate(LandType = factor(LandType, levels = c('Residential', "Mountain", "Industrial", 
+                                                "Farmland",  "Water", "Public", "Logistics", "Parking"))) %>%
+  mutate(Scenario = case_when(
+    
+    Scenario == "Setbacks" ~ "Setback",
+    Scenario == "Reduction" ~ "Additional amount by repealing setback"
+    
+  ))
+
+
+
+
+ggplot(data = graphData , aes(x =  LandType, y = Generation, fill = Scenario)) +
+  geom_bar(stat='identity') +
+  #facet_wrap(~LandType, scales = 'free') +
+  theme(legend.position = "",
+        axis.title.x = element_blank(),
+        #axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1),
+        text = element_text(size = 45)) +
+  scale_fill_manual(values = c("palegreen3","palegreen4")) +
+  #scale_fill_brewer(palette = "Greens") +
+  ylab("Generation(TWh)")
+
+
+
+
+
+
+
+### How much would generation be reduced by setback regulation? ### by SiGun including both setback and Nosetback
+
+totalData_woID_mnpt_Reduction_bySGG <- totalData_woID_mnpt_NoSB %>%
+  left_join(totalData_woID_mnpt_YesSB, by = c("LandType", "Technology", "SiGun", "setbackRegion")) %>%
+  mutate(Generation.x = Generation.x - Generation.y,
+         Scenario.x = 'Reduction') %>%
+  rename(Scenario = Scenario.x,
+         Area = Area.x,
+         Capacity = Capacity.x,
+         Generation = Generation.x,
+         TC = TC.x) %>%
+  select(LandType, SiGun, Scenario, Area, Capacity, Generation, TC) %>%
+  group_by(LandType, SiGun, Scenario) %>% summarize(Generation = sum(Generation)) %>% ungroup()
+
+
+
+## tempData : Reduction양을 LandType별로 색을 넣으려고, Scenario 칼럼에 '공공건축물' (Resid)단어를 넣을 예정.
+totalData_woID_mnpt_Reduction_bySGG_graphData <- totalData_woID_mnpt_Reduction_bySGG %>%
+  TypeToEng() %>%
+  mutate(Scenario = LandType) %>%
+  select(-LandType)
+
+
+## just get the order of factors in SiGun lists.
+SGGorder_bySetbackGen <- totalData_woID_mnpt_YesSB %>%
+  group_by(SiGun) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
+  arrange(desc(Generation)) %>%
+  pull(SiGun)
+
+  
+
+
+graphData <- totalData_woID_mnpt_YesSB %>%
+  bind_rows(totalData_woID_mnpt_Reduction_bySGG_graphData) %>%
+  group_by(SiGun, Scenario) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
+  mutate(SiGun = factor(SiGun, levels = SGGorder_bySetbackGen)) %>%
+  mutate(Scenario = factor(Scenario, levels = rev(c("Setbacks", "Mountain", "Farmland", "Residential", "Industrial", "Logistics", "Water", "Public", "Parking"))))
+
+
+
+ggplot(data = graphData , aes(x =  SiGun, y = Generation, fill = Scenario)) +
+  geom_bar(stat='identity', color = 'black') +
+  #facet_wrap(~LandType, scales = 'free') +
+  theme(legend.position = "",
+        axis.title.x = element_blank(),
+        #axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        text = element_text(size = 45)) +
+  #scale_fill_manual(values = c("palegreen3","palegreen4")) +
+  #scale_fill_brewer(palette = "Greens") +
+  ylab("Generation(TWh)")
+
+
+
+
+
+
+
+
+
+
+
+
+
+### How much would capacity be reduced by setback regulation? ### by SiGunGu including both setback and Nosetback
+test <- totalData %>%
+  group_by(SiGun, Scenario) %>% 
+  summarize(Area = sum(Area),
+            Capacity = sum(Capacity),
+            Generation = sum(Generation),
+            TC = sum(TC)) %>% ungroup()
+
+test_NoSB <- test %>%
+  filter(Scenario == 'No setbacks')
+
+test_YesSB <- test %>%
+  filter(Scenario == 'Setbacks')
+
+test_ReductionSB <- test_NoSB %>%
+  left_join(test_YesSB, by = c("SiGun")) %>%
+  mutate(Generation.x = Generation.x - Generation.y,
+         Scenario.x = 'Reduction') %>%
+  rename(Scenario = Scenario.x,
+         Area = Area.x,
+         Capacity = Capacity.x,
+         Generation = Generation.x,
+         TC = TC.x) %>%
+  select(SiGun, Scenario, Area, Capacity, Generation, TC)
+
+graphData <- test_YesSB %>%
+  bind_rows(test_ReductionSB) %>%
+  #mutate(LandType = factor(LandType, levels = c("산지", "공동주택", "농지", "산업단지", "육상정수역", "공공건축물", "물류단지", "주차장"))) %>%
+  mutate(Scenario = case_when(
+    
+    Scenario == "Setbacks" ~ "Setback",
+    Scenario == "Reduction" ~ "Additional"
+    
+  ))
+
+
+
+
+ggplot(data = graphData, aes(x =  SiGun, y = Generation, fill = Scenario)) +
+  geom_bar(stat='identity') +
+  #facet_wrap(~LandType, scales = 'free') +
+  theme(legend.position = "right",
+        #axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust= 1),
+        text = element_text(size = 60)) +
+  scale_fill_manual(values = c("palegreen3","palegreen4"))
+#scale_fill_brewer(palette = "Greens")
+
+
+
+
+
+
+
+
+### How would many capacity be reduced by setback regulation? ### by SiGunGu representing just difference between scenarios.
 rawData_fullpower_forTable_bySGG <- totalData %>%
   group_by(SiGun, LandType, Scenario) %>% 
   summarize(Area = sum(Area),
@@ -306,7 +607,7 @@ rawData_fullpower_forTable_bySGG_YesSB <- rawData_fullpower_forTable_bySGG %>%
 
 graphData <- rawData_fullpower_forTable_bySGG_NoSB %>%
   left_join(rawData_fullpower_forTable_bySGG_YesSB, by = c("SiGun", "LandType")) %>%
-  mutate(diff_SCN = Capacity.x - Capacity.y) %>%
+  mutate(diff_SCN = Generation.x - Generation.y) %>%
   select(SiGun, LandType, diff_SCN)
 
   
@@ -314,7 +615,7 @@ graphData <- rawData_fullpower_forTable_bySGG_NoSB %>%
 
 ggplot(data = graphData, aes(x =  SiGun, y = diff_SCN, fill = LandType)) +
   geom_bar(stat='identity') +
-  #facet_wrap(~variable, scales = 'free') +
+  facet_wrap(~LandType, scales = 'free') +
   theme(legend.position = "right",
         #axis.title.x = element_blank(),
         axis.title.y = element_blank(),
