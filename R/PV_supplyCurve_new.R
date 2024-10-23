@@ -26,6 +26,20 @@ SGG_South <- c("수원시", "용인시", "성남시", "부천시", "화성시", 
 SGG_North <- c("고양시", "남양주시", "파주시", "의정부시", "양주시", "구리시", "포천시", "동두천시", "가평군",
                "연천군")
 
+reName_scenario <- function(data) {
+  
+  targetData <- data %>%
+    mutate(Scenario = case_when(
+      
+      Scenario == 'Setbacks' ~ 'Current Setback',
+      TRUE ~ 'No Setback'
+      
+    )) %>%
+    mutate(Scenario = factor(Scenario, levels = c('Current Setback', 'No Setback')))
+  
+  return(targetData)
+  
+}
 
 ## makeFullname ##
 makeFullname <- function(data) {
@@ -428,7 +442,8 @@ rawData_fullpower_forTable_byLandType <- totalData %>%
 graphData <- rawData_fullpower_forTable_byLandType %>%
   select(-TC) %>%
   gather(key = variable, value = value, -LandType, -Scenario) %>%
-  TypeToEng()
+  TypeToEng() %>%
+  reName_scenario()
 
 ggplot(data = graphData %>% mutate(variable = factor(variable, levels = c("Area", "Capacity", "Generation"))), aes(x =  Scenario, y = value, fill = LandType)) +
   geom_bar(stat='identity') +
@@ -488,16 +503,18 @@ graphData <- totalData_woID_mnpt_YesSB %>%
                                                 "Water", "Public", "Logistics", "Parking"))) %>%
   mutate(Scenario = case_when(
     
-    Scenario == "Setbacks" ~ "Setback",
-    Scenario == "Reduction" ~ "No Setback (Additional amount)"
+    Scenario == "Setbacks" ~ "Current Setback",
+    Scenario == "Reduction" ~ "No Setback (Addtional amount)"
     
-  ))
+  )) %>%
+  mutate(Scenario = factor(Scenario, levels = c("No Setback (Addtional amount)", "Current Setback")))
+  
 
 
 ggplot(data = graphData , aes(x =  LandType, y = Generation, fill = Scenario)) +
   geom_bar(stat='identity') +
   #facet_wrap(~LandType, scales = 'free') +
-  theme(legend.position = "left",
+  theme(legend.position = "none",
         axis.title.x = element_blank(),
         #axis.title.y = element_blank(),
         #axis.text.x = element_blank(),
@@ -509,7 +526,9 @@ ggplot(data = graphData , aes(x =  LandType, y = Generation, fill = Scenario)) +
    #ylab("LCOE(USD/MWh)")
 
 
-
+graphData %>%
+  spread(key = Scenario, value = Generation) %>%
+  mutate(incRate = 100 * `No Setback (Addtional amount)` / c(`Current Setback`) )
 
 
 
