@@ -38,7 +38,7 @@ library(openxlsx)
 # s11_605_8	에너지효율개선경험_해당없음(현거주주택 기준)
 
 # s11_801 : 가구원 수
-# s11_806 : 연간 총소득(세금공제 전)
+# s11_806 : 연간 총소득(세금공제 전) (단위: 만원원)
 
 
 hhd_colnames <- c(
@@ -71,7 +71,7 @@ hhd_colnames <- c(
   's11_605_8',	# 에너지효율개선경험_해당없음(현거주주택 기준)
   
   's11_801', # 가구원 수
-  's11_806' # 연간 총소득(세금공제 전)
+  's11_807' # 연간 총소득(세금공제 후후)
   
 )
 
@@ -88,19 +88,19 @@ hhd_colnames <- c(
 energy_colnames <- c(
    'id_hh', # 가구ID
    # 월별 전기소비 2020년 # (kWh)
-   # 's11_telec_2001',
-   # 's11_telec_2002',
-   # 's11_telec_2003',
-   # 's11_telec_2004',
-   # 's11_telec_2005',
-   # 's11_telec_2006',
-   # 's11_telec_2007',
-   # 's11_telec_2008',
-   # 's11_telec_2009',
-   # 's11_telec_2010',
-   # 's11_telec_2011',
-   # 's11_telec_2012',
-   's11_telec_2013',
+   # 'c_s11_telec_2001', 
+   # 'c_s11_telec_2002',
+   # 'c_s11_telec_2003',
+   # 'c_s11_telec_2004',
+   # 'c_s11_telec_2005',
+   # 'c_s11_telec_2006',
+   # 'c_s11_telec_2007',
+   # 'c_s11_telec_2008',
+   # 'c_s11_telec_2009',
+   # 'c_s11_telec_2010',
+   # 'c_s11_telec_2011',
+   # 'c_s11_telec_2012',
+   'c_s11_telec_2013',
   
   
   # 월별 지역난방 2020년 # (Mcal)
@@ -232,6 +232,7 @@ energy_colnames <- c(
 )
 
 ## Unit Conversion ##
+Mcal_to_kWh <- 1.162 
 Mcal_to_MJ <- 4.184
 thous <- 10^(3)
 kerosLiter_to_kcal <- 8740   # 지역에너지통계연보, 에너지열량환산기준 
@@ -241,6 +242,10 @@ brqKg_to_kcal <- 4710 # 지역에너지통계연보
 
 
 rawData_hhd <- read.csv("../KESIS/HEPS11_micro_240118/HEPS11_micro_hhd_240118.csv", header = T, fileEncoding = "EUC-KR")
+
+rawData_hhd %>%
+  count(s11_city)
+
 
 rawData_energy <- read.csv("../KESIS/HEPS11_micro_240118/HEPS11_micro_energy_231128.csv", header = T, fileEncoding = "EUC-KR")
 
@@ -254,15 +259,69 @@ energyData <- rawData_energy %>%
 hhenergyData <- hhdData %>%
   left_join(energyData, by = 'id_hh')
 
-
-hhenergyData %>%
-  select(전기요금 = s11_telec_2013 * 108, # kWh * (원/kWh)
+EnCostData <- hhenergyData %>%
+  mutate(전기요금 = c_s11_telec_2013 * Mcal_to_kWh * 108, # kWh * (원/kWh)
          난방요금 = s11_dheat_2013 * 112, # Mcal * (원/Mcal)
          가스요금 = c_s11_cgas_2013 * Mcal_to_MJ * 15.1, # Mcal * MCal_to_MJ * (원/MJ)
          등유요금 = c_s11_oil_2013 * thous / kerosLiter_to_kcal * 850, # Mcal * Mcal_to_kcal * kcal_to_Liter * (원/Liter)
          프판요금 = c_s11_pp_2013 * thous / prpnKg_to_kcal * 1850,
-         연탄요금 = c_s11_br_2013 * thos / brqKg_to_kcal / brqEach_to_kg * 657) # Mcal * Mcal_to_kcal / kg_to_kcal / each_to_kg * (원/each)
+         연탄요금 = c_s11_br_2013 * thous / brqKg_to_kcal / brqEach_to_kg * 657,
+         #에너지요금 = sum(전기요금, 난방요금, 가스요금, 등유요금, 프판요금, 연탄요금)
+         에너지요금 = 전기요금 + 난방요금 + 가스요금 + 등유요금 + 프판요금 + 연탄요금) %>% # 원
+  mutate(에너지요금비중 = 에너지요금 / c(s11_807 * 10000)) %>%
+  arrange(desc(에너지요금비중))
+  
+totalData <- EnCostData %>%
+  mutate(에너지빈곤층 = case_when(
+    
+    에너지요금비중 >= 0.1 ~ 'yes',
+    TRUE ~ 'no'
+    
+  ))
+  
+EnPvData <- totalData %>%
+  filter(에너지빈곤층 == 'yes')
 
+EnPVData_EnUse <- EnPvData %>%
+  group_by(s11_city) %>% summarize(c_s11_telec_2013 = sum(c_s11_telec_2013),
+                                   s11_dheat_2013 = sum(s11_dheat_2013),
+                                   c_s11_cgas_2013 = sum(c_s11_cgas_2013),
+                                   c_s11_oil_2013 = sum(c_s11_oil_2013),
+                                   c_s11_pp_2013 = sum(c_s11_pp_2013),
+                                   c_s11_br_2013 = sum(c_s11_br_2013),
+                                   c_s11_total_2013 = sum(c_s11_total_2013))
+
+test <- EnPVData_EnUse %>%
+  mutate(전기사용비중 = c_s11_telec_2013 / c_s11_total_2013,
+         난방사용비중 = s11_dheat_2013  / c_s11_total_2013,
+         가스사용비중 = c_s11_cgas_2013  / c_s11_total_2013,
+         등유사용비중 = c_s11_oil_2013  / c_s11_total_2013,
+         프판사용비중 = c_s11_pp_2013  / c_s11_total_2013,
+         연탄사용비중 = c_s11_br_2013  / c_s11_total_2013)
+
+
+
+
+
+
+EnCostData %>%
+  count(s11_city)
+
+EnPvData %>%
+  filter(에너지빈곤층 == 'yes')
+
+a <- EnPvData %>%
+  filter(에너지빈곤층 == 'yes')
+         #m_r_s11_105 <= 1994)
+
+a %>% count(s11_city)
+
+
+aa <- EnPvData %>%
+  count(s11_city, 에너지빈곤층 ) %>%
+  spread(에너지빈곤층,  n) %>%
+  mutate(share = yes / c(no+yes)) %>%
+  arrange(desc(share))
 
 
 
