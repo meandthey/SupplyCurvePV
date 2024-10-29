@@ -26,20 +26,7 @@ SGG_South <- c("수원시", "용인시", "성남시", "부천시", "화성시", 
 SGG_North <- c("고양시", "남양주시", "파주시", "의정부시", "양주시", "구리시", "포천시", "동두천시", "가평군",
                "연천군")
 
-reName_scenario <- function(data) {
-  
-  targetData <- data %>%
-    mutate(Scenario = case_when(
-      
-      Scenario == 'Setbacks' ~ 'Current Setback',
-      TRUE ~ 'No Setback'
-      
-    )) %>%
-    mutate(Scenario = factor(Scenario, levels = c('Current Setback', 'No Setback')))
-  
-  return(targetData)
-  
-}
+
 
 ## makeFullname ##
 makeFullname <- function(data) {
@@ -130,12 +117,12 @@ TypeToEng <- function(data) {
       LandType == "산지" ~ "Mountain",
       LandType == "농지" ~ "Farmland",
       LandType == "주차장" ~ "Parking",
-      #LandType == "도로유휴부지" ~ "Roadside land",
+      LandType == "도로유휴부지" ~ "Roadside",
       LandType == "육상정수역" ~ "Water"
       
-    ))
-    # mutate(LandType = factor(LandType, levels = c("Industrial complex", "Logistics complex", "Residential complex", "Public buildings",
-    #                                      "Mountainous area", "Farmland", "Parking lot", "Roadside land", "Water"))) %>%
+    )) %>%
+    mutate(LandType = factor(LandType, levels = c("Water", "Parking", "Roadside", "Mountain", "Farmland",
+                                                  "Public", "Logistics", "Industrial", "Residential")))
 
   
   return(engData)
@@ -173,8 +160,8 @@ getFullData <- function() {
     eachData <- eachData %>%
       mutate(Scenario = case_when(
         
-        grepl("이격거리규제없음", LandList[i]) ~ "No setbacks",
-        TRUE ~ "Setbacks"
+        grepl("이격거리규제없음", LandList[i]) ~ "No Setback",
+        TRUE ~ "Current Setback"
         
       )) %>%
       
@@ -216,12 +203,12 @@ rawData_AgriArea_YesSB <- read_csv("../data/농지/농지_이격거리적용_시
 
 AgriArea_NoSB <- rawData_AgriArea_NoSB %>%
   select(rearea_02, ADM_SECT_C) %>%
-  mutate(Scenario = "No setbacks")
+  mutate(Scenario = "No Setback")
 
 
 AgriArea_YesSB <- rawData_AgriArea_YesSB %>%
   select(rearea_02, ADM_SECT_C) %>%
-  mutate(Scenario = "Setbacks")
+  mutate(Scenario = "Current Setback")
 
 AgriArea <- AgriArea_NoSB %>%
   bind_rows(AgriArea_YesSB) 
@@ -343,10 +330,10 @@ totalData_woID <- totalData %>%
   
 
 totalData_woID_YesSB <- totalData_woID %>%
-  filter(Scenario =='Setbacks')
+  filter(Scenario =='Current Setback')
 
 totalData_woID_NoSB <- totalData_woID %>%
-  filter(Scenario =='No setbacks')
+  filter(Scenario =='No setback')
 
 totalData_woID_YesSB_NoSB <-  totalData_woID_NoSB %>%
   left_join(totalData_woID_YesSB, by = c("LandType", "Technology", "SiGun"))
@@ -356,39 +343,39 @@ totalData_woID_YesSB_NoSB <-  totalData_woID_NoSB %>%
 totalData_woID_temp <- totalData_woID_YesSB_NoSB %>%
   mutate(Area.y = case_when(
     
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'No setbackRegion' ~ Area.x,
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Area.y > Area.x ~ Area.x,
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Area.y <= Area.x ~ Area.y,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'No setbackRegion' ~ Area.x,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'setbackRegion' & Area.y > Area.x ~ Area.x,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'setbackRegion' & Area.y <= Area.x ~ Area.y,
     TRUE ~ 0
     
   )) %>%
   mutate(Capacity.y = case_when(
     
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'No setbackRegion' ~ Capacity.x,
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Capacity.y > Capacity.x ~ Capacity.x,
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Capacity.y <= Capacity.x ~ Capacity.y,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'No setbackRegion' ~ Capacity.x,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'setbackRegion' & Capacity.y > Capacity.x ~ Capacity.x,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'setbackRegion' & Capacity.y <= Capacity.x ~ Capacity.y,
     TRUE ~ 0
     
   )) %>%
   mutate(Generation.y = case_when(
     
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'No setbackRegion' ~ Generation.x,
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Generation.y > Generation.x ~ Generation.x,
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & Generation.y <= Generation.x ~ Generation.y,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'No setbackRegion' ~ Generation.x,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'setbackRegion' & Generation.y > Generation.x ~ Generation.x,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'setbackRegion' & Generation.y <= Generation.x ~ Generation.y,
     TRUE ~ 0
     
   )) %>%
   mutate(TC.y = case_when(
     
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'No setbackRegion' ~ TC.x,
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & TC.y > TC.x ~ TC.x,
-    Scenario.y == 'Setbacks' & setbackRegion.y == 'setbackRegion' & TC.y <= TC.x ~ TC.y,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'No setbackRegion' ~ TC.x,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'setbackRegion' & TC.y > TC.x ~ TC.x,
+    Scenario.y == 'Current Setback' & setbackRegion.y == 'setbackRegion' & TC.y <= TC.x ~ TC.y,
     TRUE ~ 0
     
   )) %>%
   mutate(Scenario.y = case_when(
     
-    is.na(Scenario.y) ~ 'Setbacks',
+    is.na(Scenario.y) ~ 'Current Setback',
     TRUE ~ Scenario.y
     
   )) %>%
@@ -442,8 +429,7 @@ rawData_fullpower_forTable_byLandType <- totalData %>%
 graphData <- rawData_fullpower_forTable_byLandType %>%
   select(-TC) %>%
   gather(key = variable, value = value, -LandType, -Scenario) %>%
-  TypeToEng() %>%
-  reName_scenario()
+  TypeToEng()
 
 ggplot(data = graphData %>% mutate(variable = factor(variable, levels = c("Area", "Capacity", "Generation"))), aes(x =  Scenario, y = value, fill = LandType)) +
   geom_bar(stat='identity') +
@@ -466,7 +452,7 @@ graphData_wTotal <- graphData %>%
 
 Fig1_Table <- graphData_wTotal %>%
   spread(key = Scenario, value = value) %>%
-  mutate(diffRate = 100 * c(`No setbacks` - `Setbacks`) / `Setbacks`)
+  mutate(diffRate = 100 * c(`No Setback` - `Current Setback`) / `Current Setback`)
 
 
 
@@ -476,10 +462,10 @@ Fig1_Table <- graphData_wTotal %>%
 ### How much would generation be reduced by setback regulation? ### by LandType including both setback and Nosetback
 
 totalData_woID_mnpt_NoSB <- totalData_woID_mnpt %>%
-  filter(Scenario == 'No setbacks')
+  filter(Scenario == 'No Setback')
 
 totalData_woID_mnpt_YesSB <- totalData_woID_mnpt %>%
-  filter(Scenario == 'Setbacks')
+  filter(Scenario == 'Current Setback')
 
 totalData_woID_mnpt_Reduction_byLandType <- totalData_woID_mnpt_NoSB %>%
   left_join(totalData_woID_mnpt_YesSB, by = c("LandType", "Technology", "SiGun", "setbackRegion")) %>%
@@ -503,8 +489,8 @@ graphData <- totalData_woID_mnpt_YesSB %>%
                                                 "Water", "Public", "Logistics", "Parking"))) %>%
   mutate(Scenario = case_when(
     
-    Scenario == "Setbacks" ~ "Current Setback",
-    Scenario == "Reduction" ~ "No Setback (Addtional amount)"
+    Scenario == "Reduction" ~ "No Setback (Addtional amount)",
+    TRUE ~ Scenario
     
   )) %>%
   mutate(Scenario = factor(Scenario, levels = c("No Setback (Addtional amount)", "Current Setback")))
@@ -567,7 +553,7 @@ graphData <- totalData_woID_mnpt_YesSB %>%
   bind_rows(totalData_woID_mnpt_Reduction_bySGG_graphData) %>%
   group_by(SiGun, Scenario) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
   mutate(SiGun = factor(SiGun, levels = SGGorder_bySetbackGen)) %>%
-  mutate(Scenario = factor(Scenario, levels = rev(c("Setbacks", "Mountain", "Farmland", "Residential", "Industrial", "Logistics", "Water", "Public", "Parking"))))
+  mutate(Scenario = factor(Scenario, levels = rev(c("Current Setback", "Mountain", "Farmland", "Residential", "Industrial", "Logistics", "Water", "Public", "Parking"))))
 
 
 ggplot(data = graphData , aes(x =  SiGun, y = Generation, fill = Scenario)) +
@@ -591,7 +577,9 @@ rawData_fullpower_wLCOE_ordered_YesSB <- totalData %>%
   mutate(LCOE = LCOE * 1000) %>%  # Unit : $/kWh to $/MWh
   arrange(desc(Generation)) %>%
   arrange(LCOE) %>%
-  filter(Scenario == "Setbacks")
+  filter(Scenario == "Current Setback") %>%
+  TypeToEng() %>%
+  mutate(LandType = factor(LandType, levels = rev(c("Industrial", "Logistics", "Residential", "Public", "Mountain", "Farmland", "Parking", "Water"))))
 #filter(LandType != '육상정수역')
 
 
@@ -599,7 +587,9 @@ rawData_fullpower_wLCOE_ordered_NoSB <- totalData %>%
   mutate(LCOE = LCOE * 1000) %>%  # Unit : $/kWh to $/MWh
   arrange(desc(Generation)) %>%
   arrange(LCOE) %>%
-  filter(Scenario == "No setbacks")
+  filter(Scenario == "No Setback") %>%
+  TypeToEng() %>%
+  mutate(LandType = factor(LandType, levels = rev(c("Industrial", "Logistics", "Residential", "Public", "Mountain", "Farmland", "Parking", "Water"))))
 #filter(LandType != '육상정수역')
 
 
@@ -632,16 +622,18 @@ ggplot() +
   scale_x_continuous(name="x") + 
   scale_y_continuous(name="y") +
   geom_rect(data=testGraph_YesSB, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=LandType), alpha=0.5, linewidth = 0.1) +
-  geom_rect(data=testGraph_NoSB, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=LandType), alpha=0.5, linewidth = 0.1) +
-  theme(legend.position = "",
+  geom_rect(data=testGraph_NoSB, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=LandType), alpha=0.9, linewidth = 0.1) +
+  theme(legend.position = "right",
         axis.title.x = element_blank(),
         #axis.title.y = element_blank(),
         #axis.text.x = element_blank(),
         #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         text = element_text(size = 45)) +
-  geom_vline(xintercept = 9*0.155*8760/1000, linetype = 'dash') +  # 경기도 9GW가 목표니까 그에 대응되는 발전량을 표시.
-  geom_hline(yintercept = 272) +
-  geom_hline(yintercept = 229)
+  geom_vline(xintercept = c(9*0.136*8760/1000), linetype = 'dashed')  # 경기도 9GW가 목표니까 그에 대응되는 발전량을 표시. # CF 적용할때 경기도 평균이 13.6% 였음.
+  # sum(testGraph_NoSB$TC)/sum(testGraph_NoSB$Generation)
+  # sum(testGraph_YesSB$TC)/sum(testGraph_YesSB$Generation)
+  #geom_hline(yintercept = 280.2165) +
+  #geom_hline(yintercept = 234.1442)
 
   
 
@@ -672,10 +664,10 @@ rawData_fullpower_wLCOE_forTable <- rawData_fullpower_forTable_byLandType %>%
 
 
 summary_byLandType_forTable_NoSB <- rawData_fullpower_wLCOE_forTable %>%
-  filter(Scenario =="No setbacks")
+  filter(Scenario =="No Setback")
 
 summary_byLandType_forTable_YesSB <- rawData_fullpower_wLCOE_forTable %>%
-  filter(Scenario =="Setbacks")
+  filter(Scenario =="Setback")
 
 
 
