@@ -75,6 +75,57 @@ makeFullname <- function(data) {
 }
 
 
+
+## SiGun: SGG_to_Eng ##
+SGG_to_Eng <- function(data) {
+  
+  target <- data %>%
+    mutate(SiGun = case_when(
+      
+      SiGun == "가평군" ~ "Gapyeong",
+      SiGun == "고양시" ~ "Goyang",
+      SiGun == "과천시" ~ "Gwacheon",
+      SiGun == "광명시" ~ "Gwangmyeong",
+      SiGun == "광주시" ~ "Gwangju",
+      SiGun == "구리시" ~ "Guri",
+      SiGun == "군포시" ~ "Gunpo",
+      SiGun == "김포시" ~ "Gimpo",
+      SiGun == "남양주시" ~ "Namyangju",
+      SiGun == "동두천시" ~ "Dongducheon",
+      SiGun == "부천시" ~ "Bucheon",
+      SiGun == "성남시" ~ "Seongnam",
+      SiGun == "수원시" ~ "Suwon",
+      SiGun == "시흥시" ~ "Siheung",
+      SiGun == "안산시" ~ "Ansan",
+      SiGun == "안양시" ~ "Anyang",
+      SiGun == "양주시" ~ "Yangju",
+      SiGun == "양평군" ~ "Yangpyeong",
+      SiGun == "여주시" ~ "Yeoju",
+      SiGun == "연천군" ~ "Yeoncheon",
+      SiGun == "오산시" ~ "Osan",
+      SiGun == "용인시" ~ "Yongin",
+      SiGun == "의왕시" ~ "Uiwang",
+      SiGun == "의정부시" ~ "Uijeongbu",
+      SiGun == "이천시" ~ "Icheon",
+      SiGun == "파주시" ~ "Paju",
+      SiGun == "평택시" ~ "Pyeongtaek",
+      SiGun == "포천시" ~ "Pocheon",
+      SiGun == "하남시" ~ "Hanam",
+      SiGun == "화성시" ~ "Hwaseong",
+      SiGun == "안성시" ~ "Anseong",
+      
+      TRUE ~ SiGun
+      
+    ))
+  
+  return(target)
+  
+}
+
+
+
+
+
 orderSGG_Wtotal <- function(data) {
   
   targetData <- data %>%
@@ -333,7 +384,7 @@ totalData_woID_YesSB <- totalData_woID %>%
   filter(Scenario =='Current Setback')
 
 totalData_woID_NoSB <- totalData_woID %>%
-  filter(Scenario =='No setback')
+  filter(Scenario =='No Setback')
 
 totalData_woID_YesSB_NoSB <-  totalData_woID_NoSB %>%
   left_join(totalData_woID_YesSB, by = c("LandType", "Technology", "SiGun"))
@@ -429,9 +480,10 @@ rawData_fullpower_forTable_byLandType <- totalData %>%
 graphData <- rawData_fullpower_forTable_byLandType %>%
   select(-TC) %>%
   gather(key = variable, value = value, -LandType, -Scenario) %>%
-  TypeToEng()
+  TypeToEng() %>%
+  rename(`Land Use Type` = `LandType`)
 
-ggplot(data = graphData %>% mutate(variable = factor(variable, levels = c("Area", "Capacity", "Generation"))), aes(x =  Scenario, y = value, fill = LandType)) +
+ggplot(data = graphData %>% mutate(variable = factor(variable, levels = c("Area", "Capacity", "Generation"))), aes(x =  Scenario, y = value, fill = `Land Use Type`)) +
   geom_bar(stat='identity') +
   facet_wrap(~variable, scales = 'free') +
   theme(legend.position = "right",
@@ -439,7 +491,8 @@ ggplot(data = graphData %>% mutate(variable = factor(variable, levels = c("Area"
         axis.title.y = element_blank(),
         #axis.text.x = element_blank(),
         #axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1),
-        text = element_text(size = 40))
+        text = element_text(size = 40)) +
+  labs(color = 'Land Use Type')
 
 # Summary table for Fig 1. #  경기도 면적 10,171km2
 
@@ -455,7 +508,10 @@ Fig1_Table <- graphData_wTotal %>%
   mutate(diffRate = 100 * c(`No Setback` - `Current Setback`) / `Current Setback`)
 
 
-
+Fig1_Table_IndLog <- Fig1_Table %>%
+  filter(LandType %in% c("Industrial", "Logistics")) %>%
+  group_by(variable) %>% summarize(`Current Setback` = sum(`Current Setback`),
+                                   `No Setback` = sum(`No Setback`),)
 
 
 # Fig 2 #
@@ -485,22 +541,23 @@ graphData <- totalData_woID_mnpt_YesSB %>%
   #mutate(LandType = factor(LandType, levels = c("산지", "공동주택", "농지", "산업단지", "육상정수역", "공공건축물", "물류단지", "주차장"))) %>%
   # mutate(LandType = factor(LandType, levels = c("Residential complex", "Mountainous area", "Industrial complex", 
   #                                               "Farmland",  "Water", "Public buildings", "Logistics complex", "Parking lot"))) %>%
-  mutate(LandType = factor(LandType, levels = c('Residential', "Industrial",  "Farmland", "Mountain",
-                                                "Water", "Public", "Logistics", "Parking"))) %>%
+  mutate(LandType = factor(LandType, levels = c('Residential', "Industrial", "Water", "Farmland", "Mountain",
+                                                 "Public", "Logistics", "Roadside", "Parking"))) %>%
   mutate(Scenario = case_when(
     
     Scenario == "Reduction" ~ "No Setback (Addtional amount)",
     TRUE ~ Scenario
     
   )) %>%
-  mutate(Scenario = factor(Scenario, levels = c("No Setback (Addtional amount)", "Current Setback")))
+  mutate(Scenario = factor(Scenario, levels = c("No Setback (Addtional amount)", "Current Setback"))) %>%
+  rename(`Land Use Type` = `LandType`)
   
 
 
-ggplot(data = graphData , aes(x =  LandType, y = Generation, fill = Scenario)) +
+ggplot(data = graphData , aes(x =  `Land Use Type`, y = Generation, fill = Scenario)) +
   geom_bar(stat='identity') +
   #facet_wrap(~LandType, scales = 'free') +
-  theme(legend.position = "none",
+  theme(legend.position = "right",
         axis.title.x = element_blank(),
         #axis.title.y = element_blank(),
         #axis.text.x = element_blank(),
@@ -508,8 +565,7 @@ ggplot(data = graphData , aes(x =  LandType, y = Generation, fill = Scenario)) +
         text = element_text(size = 45)) +
   scale_fill_manual(values = c("palegreen3","palegreen4")) +
   #scale_fill_brewer(palette = "Greens") +
-  ylab("Generation(TWh)")
-   #ylab("LCOE(USD/MWh)")
+   ylab("Geneartion (TWh)")
 
 
 graphData %>%
@@ -545,6 +601,7 @@ totalData_woID_mnpt_Reduction_bySGG_graphData <- totalData_woID_mnpt_Reduction_b
 ## just get the order of factors in SiGun lists.
 SGGorder_bySetbackGen <- totalData_woID_mnpt_YesSB %>%
   group_by(SiGun) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
+  SGG_to_Eng() %>%
   arrange(desc(Generation)) %>%
   pull(SiGun)
 
@@ -552,14 +609,16 @@ SGGorder_bySetbackGen <- totalData_woID_mnpt_YesSB %>%
 graphData <- totalData_woID_mnpt_YesSB %>%
   bind_rows(totalData_woID_mnpt_Reduction_bySGG_graphData) %>%
   group_by(SiGun, Scenario) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
+  SGG_to_Eng() %>%
   mutate(SiGun = factor(SiGun, levels = SGGorder_bySetbackGen)) %>%
-  mutate(Scenario = factor(Scenario, levels = rev(c("Current Setback", "Mountain", "Farmland", "Residential", "Industrial", "Logistics", "Water", "Public", "Parking"))))
+  mutate(Scenario = factor(Scenario, levels = rev(c("Current Setback", "Farmland", "Mountain", "Residential", "Industrial", "Water", "Logistics",  "Public", 'Roadside',"Parking"))))
+  
 
 
 ggplot(data = graphData , aes(x =  SiGun, y = Generation, fill = Scenario)) +
   geom_bar(stat='identity', color = 'black') +
   #facet_wrap(~LandType, scales = 'free') +
-  theme(legend.position = "",
+  theme(legend.position = "right",
         axis.title.x = element_blank(),
         #axis.title.y = element_blank(),
         #axis.text.x = element_blank(),
@@ -570,6 +629,18 @@ ggplot(data = graphData , aes(x =  SiGun, y = Generation, fill = Scenario)) +
   ylab("Generation(TWh)")
 
 
+#graphData_forCheck <-
+graphData_LandTypeTotal_temp <- graphData %>%
+  group_by(Scenario) %>% summarize(Generation = sum(Generation)) %>% ungroup()
+
+graphData_sharebySGG_byLandType <- graphData %>%
+  left_join(graphData_LandTypeTotal_temp, by = "Scenario") %>%
+  mutate(share = 100 * c(Generation.x / Generation.y))
+
+graphDataVV <- graphData_sharebySGG_byLandType %>%
+  filter(Scenario == 'Farmland') %>%
+  arrange(desc(share))
+
 
 ## Fig 4 : Supply curve of PV
 
@@ -579,7 +650,7 @@ rawData_fullpower_wLCOE_ordered_YesSB <- totalData %>%
   arrange(LCOE) %>%
   filter(Scenario == "Current Setback") %>%
   TypeToEng() %>%
-  mutate(LandType = factor(LandType, levels = rev(c("Industrial", "Logistics", "Residential", "Public", "Mountain", "Farmland", "Parking", "Water"))))
+  mutate(LandType = factor(LandType, levels = rev(c("Residential", "Industrial", "Logistics", "Public", "Farmland", "Mountain", "Roadside", "Parking", "Water"))))
 #filter(LandType != '육상정수역')
 
 
@@ -589,7 +660,7 @@ rawData_fullpower_wLCOE_ordered_NoSB <- totalData %>%
   arrange(LCOE) %>%
   filter(Scenario == "No Setback") %>%
   TypeToEng() %>%
-  mutate(LandType = factor(LandType, levels = rev(c("Industrial", "Logistics", "Residential", "Public", "Mountain", "Farmland", "Parking", "Water"))))
+  mutate(LandType = factor(LandType, levels = rev(c("Residential", "Industrial", "Logistics", "Public", "Farmland", "Mountain", "Roadside", "Parking", "Water"))))
 #filter(LandType != '육상정수역')
 
 
