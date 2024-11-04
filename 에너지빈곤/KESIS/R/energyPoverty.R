@@ -278,6 +278,11 @@ totalData <- EnCostData %>%
     TRUE ~ 'no'
     
   ))
+
+
+
+
+
   
 EnPvData <- totalData %>%
   filter(에너지빈곤층 == 'yes')
@@ -317,7 +322,7 @@ a <- EnPvData %>%
 a %>% count(s11_city)
 
 
-aa <- EnPvData %>%
+aa <- totalData %>%
   count(s11_city, 에너지빈곤층 ) %>%
   spread(에너지빈곤층,  n) %>%
   mutate(share = yes / c(no+yes)) %>%
