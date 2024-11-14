@@ -689,6 +689,9 @@ testGraph_NoSB <- rawData_fullpower_wLCOE_ordered_NoSB %>%
     
   ))
 
+TWh_9GW <- c(9*0.136*8760/1000) # 9GW * CF * hours * converter
+SMP <- c(167 / exRate * 1000)   # 167(won/kWh) * 1300 (won/USD) : USD/MWh
+
 ggplot() + 
   scale_x_continuous(name="x") + 
   scale_y_continuous(name="y") +
@@ -700,7 +703,8 @@ ggplot() +
         #axis.text.x = element_blank(),
         #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         text = element_text(size = 45)) +
-  geom_vline(xintercept = c(9*0.136*8760/1000), linetype = 'dashed')  # 경기도 9GW가 목표니까 그에 대응되는 발전량을 표시. # CF 적용할때 경기도 평균이 13.6% 였음.
+  geom_vline(xintercept = TWh_9GW, linetype = 'dashed') +  # 경기도 9GW가 목표니까 그에 대응되는 발전량을 표시. # CF 적용할때 경기도 평균이 13.6% 였음.
+  geom_hline(yintercept = SMP, linetype = 'dashed')  # SMP 2023, 육지)  https://www.kpx.or.kr/smpYearly.es?mid=a10606080400&device=pc
   # sum(testGraph_NoSB$TC)/sum(testGraph_NoSB$Generation)
   # sum(testGraph_YesSB$TC)/sum(testGraph_YesSB$Generation)
   #geom_hline(yintercept = 280.2165) +
@@ -708,357 +712,37 @@ ggplot() +
 
   
 
+## (경제적 비용) ##
+testGraph_YesSB %>%
+  filter(x1 <= TWh_9GW) %>%
+  mutate(barArea = sum(TC))
+
+testGraph_NoSB %>%
+  filter(x1 <= TWh_9GW) %>%
+  mutate(barArea = sum(TC))
+
+
+## (경제적 잠재량) ##
+testGraph_YesSB %>%
+  filter(LCOE <= SMP) %>%
+  mutate(totGen = sum(Generation))
+
+testGraph_NoSB %>%
+  filter(LCOE <= SMP) %>%
+  mutate(totGen = sum(Generation))
 
 #######################################
 
 
-rawData_fullpower_forTable_byLandType <- totalData %>%
-  group_by(LandType, Scenario) %>% 
-  summarize(Area = sum(Area),
-            Capacity = sum(Capacity),
-            Generation = sum(Generation),
-            TC = sum(TC)) %>% ungroup()
 
 
-### Making Summary Table ### by Total
-rawData_fullpower_wLCOE_forTable_byTotal <- rawData_fullpower_forTable_byLandType %>%
-  group_by(Scenario) %>% 
-  summarize(Area = sum(Area),
-            Capacity = sum(Capacity),
-            Generation = sum(Generation),
-            TC = sum(TC)) %>% ungroup() %>%
-  mutate(avgLCOE = TC / Generation) %>%
-  mutate(LandType = '전체', .before = Scenario)
 
-rawData_fullpower_wLCOE_forTable <- rawData_fullpower_forTable_byLandType %>%
-  bind_rows(rawData_fullpower_wLCOE_forTable_byTotal)
 
 
-summary_byLandType_forTable_NoSB <- rawData_fullpower_wLCOE_forTable %>%
-  filter(Scenario =="No Setback")
 
-summary_byLandType_forTable_YesSB <- rawData_fullpower_wLCOE_forTable %>%
-  filter(Scenario =="Setback")
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-### How would many capacity be reduced by setback regulation? ### by SiGunGu representing just difference between scenarios.
-rawData_fullpower_forTable_bySGG <- totalData %>%
-  group_by(SiGun, LandType, Scenario) %>% 
-  summarize(Area = sum(Area),
-            Capacity = sum(Capacity),
-            Generation = sum(Generation),
-            TC = sum(TC)) %>% ungroup()
-
-rawData_fullpower_forTable_bySGG_NoSB <- rawData_fullpower_forTable_bySGG %>%
-  filter(Scenario == "No setbacks")
-
-
-rawData_fullpower_forTable_bySGG_YesSB <- rawData_fullpower_forTable_bySGG %>%
-  filter(Scenario == "Setbacks")
-
-
-graphData <- rawData_fullpower_forTable_bySGG_NoSB %>%
-  left_join(rawData_fullpower_forTable_bySGG_YesSB, by = c("SiGun", "LandType")) %>%
-  mutate(diff_SCN = Generation.x - Generation.y) %>%
-  select(SiGun, LandType, diff_SCN)
-
-  
-
-
-ggplot(data = graphData, aes(x =  SiGun, y = diff_SCN, fill = LandType)) +
-  geom_bar(stat='identity') +
-  #facet_wrap(~LandType, scales = 'free') +
-  theme(legend.position = "right",
-        #axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
-        #axis.text.x = element_blank(),
-        #axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1),
-        text = element_text(size = 40))
-
-
-
-
-
-
-
-
-###########################################
-
-
-
-## percent Matrix (LandType * SiGun)
-test <- totalData %>%
-  filter(Scenario == 'No setbacks') %>%
-  group_by(LandType, SiGun, setbackRegion) %>% summarize(Generation = sum(Generation)) %>% ungroup() %>%
-  group_by(setbackRegion) %>% mutate(share = 100 * Generation / sum(Generation)) %>% ungroup()
-
-
-
-
-test <- totalData %>%
-  filter(Scenario == 'No setbacks') %>%
-  group_by(LandType, SiGun) %>% summarize(Generation = sum(Generation)) %>%
-  mutate(setbackRegion = case_when(
-    
-    SiGun %in% setbackRegion$setbackRegion ~ 'setbackRegion',
-    TRUE ~ 'No setbackRegion'
-    
-  )) %>% ungroup() %>%
-  mutate(share = 100 * Generation / sum(Generation)) %>%
-  select(-Generation) %>%
-  spread( key = LandType, value = share)
-
-
-
-
-
-
-
-
-
-
-# 면적: km2, 발전용량: GW, 발전량: TWh, TC: Milion USD, avgLCOE: USD/kWh
-finalSummary_byLandType_forTable <- summary_byLandType_forTable_NoSB %>%
-  left_join(summary_byLandType_forTable_YesSB, by = c("유형")) %>%
-  mutate(면적_diff = 면적.y - 면적.x,
-         면적_diffR = 100 * c(면적_diff / 면적.x),
-         
-         발전용량_diff = 발전용량.y - 발전용량.x,
-         발전용량_diffR = 100 * c(발전용량_diff / 발전용량.x),
-         
-         발전량_diff = 발전량.y - 발전량.x,
-         발전량_diffR = 100 * c(발전량_diff / 발전량.x),
-         
-         TC_diff = TC.y - TC.x,
-         TC_diffR = 100 * c(TC_diff / TC.x),
-         
-         avgLCOE_diff = avgLCOE.y - avgLCOE.x,
-         avgLCOE_diffR = 100 * c(avgLCOE_diff / avgLCOE.x)) %>%
-  select(유형, 
-         면적.x, 면적.y, 면적_diff, 면적_diffR, 
-         발전용량.x, 발전용량.y, 발전용량_diff, 발전용량_diffR,
-         발전량.x, 발전량.y, 발전량_diff, 발전량_diffR,
-         TC.x, TC.y, TC_diff, TC_diffR,
-         avgLCOE.x, avgLCOE.y, avgLCOE_diff, avgLCOE_diffR) %>%
-  arrange(발전용량.x)
-
-
-
-
-  
-
-
-
-
-
-
-
-#facet_wrap(~유형)
-#geom_text(data=tt, aes(x=x1+(x2-x1)/2, y=y1+(y2-y1)/2, label=r), size=4)
-#opts(title="geom_rect", plot.title=theme_text(size=40, vjust=1.5))
-
-
-### 유형별 ###
-rawData_fullpower_wLCOE_ordered_indType <- rawData_fullpower_wLCOE_ordered %>%
-  filter(LandType == "산업단지")
-
-testGraph <- rawData_fullpower_wLCOE_ordered_indType %>%
-  mutate(x1 = lag(cumsum(발전량)),
-         x2 = cumsum(발전량),
-         y1 = 0,
-         y2 = LCOE) %>%
-  mutate(x1 = case_when(
-    
-    is.na(x1) ~ 0,
-    TRUE ~ x1
-    
-  ))
-
-ggplot() + 
-  scale_x_continuous(name="x") + 
-  scale_y_continuous(name="y") +
-  geom_rect(data=testGraph, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, linewidth = 0.1)
-
-
-ggplot(data = testGraph, aes(x = x2,, y = y2)) +
-  geom_point() +
-  geom_path()
-
-
-
-############# 유형별로 그려보기기 ############# 
-
-ind_tt_graph <- supplyCurve_test_order %>%
-  filter(유형 == "산업단지") %>%
-  mutate(x1 = lag(cumsum(발전량)),
-         x2 = cumsum(발전량),
-         y1 = 0,
-         y2 = LCOE) %>%
-  mutate(x1 = case_when(
-    
-    is.na(x1) ~ 0,
-    TRUE ~ x1
-    
-  ))
-
-  
-  
-
-ggplot() + 
-  scale_x_continuous(name="x") + 
-  scale_y_continuous(name="y") +
-  geom_rect(data=ind_tt_graph, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=유형), alpha=0.5, linetype = 1)
-
-
-
-tt %>%
-  
-
-
-
-##### 농지 data import #####
-rawData_AgriArea <- read.csv("../data/농지/농지_이격거리미적용_시군구.csv",  header = T)
-rawData_AgriArea <- read.csv("../data/농지/농지_이격거리미적용_시군구.csv",  header = T, fileEncoding="UTF-8")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-draw_supplyCurve_test <- supplyCurve_test %>%
-  ggmacc(abatement = 발전량, mac = LCOE, fill = 유형, cost_threshold = 100,
-         zero_line = TRUE, threshold_line = TRUE, threshold_fade = 0.3)
-
-
-
-
-
-
-social_cost_of_carbon <- 66.1
-
-full_macc <- uk_agroforestry %>%
-  ggmacc(abatement = co2_tyear, mac = mac_gbp_tco2, fill = crop, cost_threshold = social_cost_of_carbon,
-         zero_line = TRUE, threshold_line = TRUE, threshold_fade = 0.3)
-
-full_macc
-
-
-
-
-
-
-
-test_A <- test %>%
-  filter(이격거리 == 'N') %>%
-  mutate(유형_ID = paste0(유형, ID)) %>%
-  filter(유형 != '육상정수역')
-
-
-ggplot(test_A, aes(x = 유형_ID, y = 면적)) + 
-  geom_point()
-#geom_hline(yintercept = 2.65, linetype = 'dashed', colour = 'gray', linewidth = 1.5) +
-theme(text = element_text(size = 110),
-      axis.text.x = element_text(angle = 90),
-      legend.position = 'right',
-      axis.title.x = element_blank(),
-      axis.title.y = element_blank())
-  
-test_B <- test_A %>%
-  filter(유형 == '공공건축물',
-         ID <= 3)
-
-
-ggplot(test_B, aes(x = 유형_ID, y = 면적, width = 발전량/100000), binwidth = 10) + 
-  geom_bar(stat = 'identity', position = 'dodge') +
-  facet_grid(~유형)
-  #geom_hline(yintercept = 2.65, linetype = 'dashed', colour = 'gray', linewidth = 1.5) +
-  theme(text = element_text(size = 110),
-        axis.text.x = element_text(angle = 90),
-        legend.position = 'right',
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank())
-
-
-
-  
-
-
-# FullData <- rawData_full %>%
-#   left_join(rawData_prm, by = c("유형_full")) %>% relocate(ID) %>%
-#   gather(-ID, -유형_full, -유형1, -유형2, -유형3, -유형4, -유형5, -유형6, -이격유형, -지역, -면적, -단위, -필요면적, key = 시나리오, value = 설치면적비중) %>%
-#   left_join(cf_bySGG, by = "지역") %>% select(-Units) %>%
-#   mutate(설비용량 = 면적 * c(설치면적비중 / 100) / 필요면적 / mil,
-#          연발전량 = 설비용량 * 이용률 * 365 * 24) %>%
-#   select(-필요면적, -단위, -설치면적비중, -이용률)
-# 
-# FullData_wSNT <- AddSthNth(FullData)
-# 
-# FullData_wSNT_Capa <- FullData_wSNT %>%
-#   select(ID, 유형_full, 유형1, 유형2, 유형3, 유형4, 유형5, 유형6, 이격유형, 지역, 면적, 시나리오, "설비용량") %>%
-#   spread(key = 시나리오, value = "설비용량")
-# 
-# FullData_wSNT_Gen <- FullData_wSNT %>%
-#   select(ID, 유형_full, 유형1, 유형2, 유형3, 유형4, 유형5, 유형6, 이격유형, 지역, 면적, 시나리오, "연발전량") %>%
-#   spread(key = 시나리오, value = "연발전량")
-# 
-# 
-# PickWritedata <- function(IDs) {
-#   
-#   pickData_Capa <- FullData_wSNT_Capa %>%
-#     filter(ID %in% IDs) %>%
-#     orderSGG_Wtotal()
-#   
-#   pickData_Gen <- FullData_wSNT_Gen %>%
-#     filter(ID %in% IDs) %>%
-#     orderSGG_Wtotal()
-#   
-#   writeExcel("ReportTable.xlsx", pickData_Capa, "용량(GW)")
-#   writeExcel("ReportTable.xlsx", pickData_Gen, "발전전량(GW)")
-#   
-# }
-# 
-# PickWritedata(c("1","10", "21", "22", "31", "72", "59", "60"))
-# 
 
