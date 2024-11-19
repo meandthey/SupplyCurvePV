@@ -11,6 +11,9 @@ library(tidyverse)
 exRate <- 1300
 thous <- 10^(3) 
 mil <- 10^(6)
+emisCoef_Gen <- 0.4434 # (tCO2/MWh)  = (MtCO2/TWh)
+
+
 SGG_order <- c("수원시", "용인시", "성남시", "부천시", "화성시", "안산시", "안양시", "평택시", "시흥시", "김포시",
                "광주시", "광명시", "군포시", "하남시", "오산시", "이천시", "안성시", "의왕시", "양평군", "여주시",
                "과천시", "고양시", "남양주시", "파주시", "의정부시", "양주시", "구리시", "포천시", "동두천시", "가평군",
@@ -713,9 +716,68 @@ ggplot() +
   
 
 ## (경제적 비용) ##
+QTarget_CurrentSB <- testGraph_YesSB %>%
+  filter(x1 <= TWh_9GW)
+QTarget_NoSB <- testGraph_NoSB %>%
+  filter(x1 <= TWh_9GW)
+
+
+PTarget_CurrentSB <- testGraph_YesSB %>%
+  filter(LCOE <= SMP)
+PTarget_NoSB <- testGraph_NoSB %>%
+  filter(LCOE <= SMP)
+
+Full_CurrentSB <- testGraph_YesSB
+Full_NoSB <- testGraph_NoSB
+
+
+calculTable <- function(data, Table1Name, Table2Name, ScenarioName) {
+  
+  outputData <- data %>%
+    mutate(Table1 = Table1Name,
+           Table2 = Table2Name,
+           Scenario = ScenarioName,
+           TotalGen = sum(Generation), # TWh
+           TotalEmission = TotalGen * emisCoef_Gen, # MtCO2
+           TotalCost = sum(TC), # Million USD
+           AvgGenCost = TotalCost / TotalGen, # USD/MWh
+           AvgEmisCost = TotalCost / TotalEmission # USD/tCO2
+    ) %>%
+    select(Table1, Table2, Scenario, TotalGen, TotalEmission, TotalCost, AvgGenCost, AvgEmisCost) %>%
+    unique(.)
+    
+  
+}
+
+FF_Table <- calculTable(QTarget_CurrentSB, 'TargetBased', 'QuantityBased', 'CurrentSB') %>%
+  bind_rows(calculTable(QTarget_NoSB, 'TargetBased', 'QuantityBased', 'NoSB'),
+            
+            calculTable(PTarget_CurrentSB, 'TargetBased', 'PriceBased', 'CurrentSB'),
+            calculTable(PTarget_NoSB, 'TargetBased', 'PriceBased', 'NoSB'),
+            
+            calculTable(Full_CurrentSB, 'FullUtilization', "-", 'CurrentSB'),
+            calculTable(Full_NoSB, 'FullUtilization', "-", 'NoSB'))
+
+
+
+write.csv(FF_Table, "FF_Table.csv", fileEncoding = "EUC-KR")
+
+
+
+
 testGraph_YesSB %>%
   filter(x1 <= TWh_9GW) %>%
-  mutate(barArea = sum(TC))
+  mutate(Table1 = 'TargetBased',
+         Table2 = 'QuanBased',
+         Scenario = 'CurrentSB',
+         TotalGen = sum(Generation),
+         TotalEmission = TotalGen * emisCoef_Gen,
+         TotalCost = sum(TC),
+         AvgGenCost = TotalCost / TotalGen,
+         AvgEmisCost = TotalCost / TotalEmission
+         ) %>%
+  select(Table1, Table2, Scenario, TotalGen, TotalEmission, TotalCost, AvgGenCost, AvgEmisCost) %>%
+  unique(.)
 
 testGraph_NoSB %>%
   filter(x1 <= TWh_9GW) %>%
