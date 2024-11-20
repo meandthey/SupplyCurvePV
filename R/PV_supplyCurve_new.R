@@ -707,6 +707,9 @@ ggplot() +
         #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         text = element_text(size = 45)) +
   geom_vline(xintercept = TWh_9GW, linetype = 'dashed') +  # 경기도 9GW가 목표니까 그에 대응되는 발전량을 표시. # CF 적용할때 경기도 평균이 13.6% 였음.
+  #geom_vline(xintercept = 4.04, linetype = 'dashed') +  # 4.04
+  geom_segment(aes(x = 4.04, y = 0, xend = 4.04, yend = 127.7),  linetype = 'dashed') +
+  geom_segment(aes(x = 1.55, y = 0, xend = 1.55, yend = 127.7),  linetype = 'dashed') +
   geom_hline(yintercept = SMP, linetype = 'dashed')  # SMP 2023, 육지)  https://www.kpx.or.kr/smpYearly.es?mid=a10606080400&device=pc
   # sum(testGraph_NoSB$TC)/sum(testGraph_NoSB$Generation)
   # sum(testGraph_YesSB$TC)/sum(testGraph_YesSB$Generation)
@@ -714,6 +717,46 @@ ggplot() +
   #geom_hline(yintercept = 234.1442)
 
   
+## Line Graph ##
+testGraph <- testGraph_YesSB %>%
+  bind_rows(testGraph_NoSB)
+
+ggplot(data = testGraph, aes(x = x2, y = y2, group = Scenario)) +
+  #geom_point(aes(colour = Scenario), size = 8) +
+  geom_line(aes(colour = Scenario), linewidth = 1.5) +
+  geom_segment(aes(x = 4.04, y = 0, xend = 4.04, yend = 127.7),  linetype = 'dashed')
+  geom_segment(aes(x = 1.55, y = 0, xend = 1.55, yend = 127.7),  linetype = 'dashed') +
+  geom_hline(yintercept = SMP, linetype = 'dashed')  # 
+
+
+  #facet_wrap(~SIGUNGU, scales = 'free', ncol = 4) +
+  scale_color_manual(values =  c(`배출량` = "black",
+                                 `1인당 소득 효과` = 'green',
+                                 `집약도 효과` = 'blue',
+                                 `인구 효과` = 'red')) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        text = element_text(size = 40))
+
+
+ggplot(data = graph_data, aes(x = year, y = value, group = variable)) +
+  geom_point(aes(colour = variable), size = 8) +
+  geom_line(aes(colour = variable), linewidth = 1.5) +
+  facet_wrap(~SIGUNGU, scales = 'free', ncol = 4) +
+  scale_color_manual(values =  c(`배출량` = "black",
+                                 `1인당 소득 효과` = 'green',
+                                 `집약도 효과` = 'blue',
+                                 `인구 효과` = 'red')) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        text = element_text(size = 40))
+
 
 ## (경제적 비용) ##
 QTarget_CurrentSB <- testGraph_YesSB %>%
