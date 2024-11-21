@@ -722,11 +722,32 @@ testGraph <- testGraph_YesSB %>%
   bind_rows(testGraph_NoSB)
 
 ggplot(data = testGraph, aes(x = x2, y = y2, group = Scenario)) +
-  #geom_point(aes(colour = Scenario), size = 8) +
   geom_line(aes(colour = Scenario), linewidth = 1.5) +
-  geom_segment(aes(x = 4.04, y = 0, xend = 4.04, yend = 127.7),  linetype = 'dashed')
-  geom_segment(aes(x = 1.55, y = 0, xend = 1.55, yend = 127.7),  linetype = 'dashed') +
-  geom_hline(yintercept = SMP, linetype = 'dashed')  # 
+  
+  scale_x_continuous(limit = c(0,15), 
+                     breaks = c(0, 1.55, 4.04, 10.72, 10.87, 14.99)) +
+  
+  scale_y_continuous(limit = c(0, 880),
+                     breaks = c(0, 128.5, 243.8, 876.9))
+                     
+  
+  
+  ### Geom Segment 로 진행 ### Rendering 시간이 너무 오래걸림.
+  #geom_vline(xintercept = TWh_9GW, linetype = 'dashed') +  # 경기도 9GW가 목표니까 그에 대응되는 발전량을 표시. # CF 적용할때 경기도 평균이 13.6% 였음.
+  #geom_hline(yintercept = SMP, linetype = 'dashed') + # SMP 2023, 육지)  https://www.kpx.or.kr/smpYearly.es?mid=a10606080400&device=pc
+
+  # geom_segment(aes(x = 1.55, y = 0, xend = 1.55, yend = SMP),  linetype = 'dashed') +          # 1
+  # geom_segment(aes(x = 4.04, y = 0, xend = 4.04, yend = SMP),  linetype = 'dashed') +          # 2
+  # 
+  # geom_segment(aes(x = TWh_9GW, y = 0, xend = TWh_9GW, yend = 861.53),  linetype = 'dashed') + # 3
+  # 
+  # geom_segment(aes(x = 10.875, y = 0, xend = 10.875, yend = 876.923),  linetype = 'dashed') +  # 4
+  # geom_segment(aes(x = 14.996, y = 0, xend = 14.996, yend = 876.923),  linetype = 'dashed') +  # 5
+  # 
+  # geom_segment(aes(x = 0, y = SMP, xend = 14.996, yend = SMP),  linetype = 'dashed') +         # 6
+  # geom_segment(aes(x = 0, y = 243.846, xend = 14.996, yend = SMP),  linetype = 'dashed') +     # 7
+  # geom_segment(aes(x = 0, y = 876.923, xend = 14.996, yend = 876.923),  linetype = 'dashed')   # 8
+  
 
 
   #facet_wrap(~SIGUNGU, scales = 'free', ncol = 4) +
