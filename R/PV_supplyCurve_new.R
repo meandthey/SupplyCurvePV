@@ -695,6 +695,10 @@ testGraph_NoSB <- rawData_fullpower_wLCOE_ordered_NoSB %>%
 TWh_9GW <- c(9*0.136*8760/1000) # 9GW * CF * hours * converter
 SMP <- c(167 / exRate * 1000)   # 167(won/kWh) * 1300 (won/USD) : USD/MWh
 
+
+
+## supply curve in bar chart ##
+
 ggplot() + 
   scale_x_continuous(name="x") + 
   scale_y_continuous(name="y") +
@@ -707,16 +711,36 @@ ggplot() +
         #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         text = element_text(size = 45)) +
   geom_vline(xintercept = TWh_9GW, linetype = 'dashed') +  # 경기도 9GW가 목표니까 그에 대응되는 발전량을 표시. # CF 적용할때 경기도 평균이 13.6% 였음.
-  #geom_vline(xintercept = 4.04, linetype = 'dashed') +  # 4.04
   geom_segment(aes(x = 4.04, y = 0, xend = 4.04, yend = 127.7),  linetype = 'dashed') +
   geom_segment(aes(x = 1.55, y = 0, xend = 1.55, yend = 127.7),  linetype = 'dashed') +
   geom_hline(yintercept = SMP, linetype = 'dashed')  # SMP 2023, 육지)  https://www.kpx.or.kr/smpYearly.es?mid=a10606080400&device=pc
-  # sum(testGraph_NoSB$TC)/sum(testGraph_NoSB$Generation)
-  # sum(testGraph_YesSB$TC)/sum(testGraph_YesSB$Generation)
-  #geom_hline(yintercept = 280.2165) +
-  #geom_hline(yintercept = 234.1442)
 
+
+## supply curve in bar chart with labeling ##
+ggplot() + 
+  scale_x_continuous(name="x") + 
+  scale_y_continuous(name="y") +
+  geom_rect(data=testGraph_YesSB, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=LandType), alpha=0.5, linewidth = 0.1) +
+  geom_rect(data=testGraph_NoSB, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2, fill=LandType), alpha=0.9, linewidth = 0.1) +
+  theme(legend.position = "right",
+        axis.title.x = element_blank(),
+        #axis.title.y = element_blank(),
+        #axis.text.x = element_blank(),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        text = element_text(size = 45)) +
+  #geom_vline(xintercept = TWh_9GW, linetype = 'dashed') +  # 경기도 9GW가 목표니까 그에 대응되는 발전량을 표시. # CF 적용할때 경기도 평균이 13.6% 였음.
+  #geom_segment(aes(x = 4.04, y = 0, xend = 4.04, yend = 127.7),  linetype = 'dashed') +
+  #geom_segment(aes(x = 1.55, y = 0, xend = 1.55, yend = 127.7),  linetype = 'dashed') +
+  #geom_hline(yintercept = SMP, linetype = 'dashed') +  # SMP 2023, 육지)  https://www.kpx.or.kr/smpYearly.es?mid=a10606080400&device=pc
+  scale_x_continuous(limit = c(0,15), 
+                     breaks = c(0, 1.55, 4.04, 10.72, 10.87, 14.99)) +
   
+  scale_y_continuous(limit = c(0, 880),
+                     breaks = c(0, 128.5, 243.8, 876.9))
+
+
+
+
 ## Line Graph ##
 testGraph <- testGraph_YesSB %>%
   bind_rows(testGraph_NoSB)
