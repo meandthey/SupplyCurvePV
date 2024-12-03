@@ -511,10 +511,11 @@ Fig1_Table <- graphData_wTotal %>%
   mutate(diffRate = 100 * c(`No Setback` - `Current Setback`) / `Current Setback`)
 
 
+
 Fig1_Table_IndLog <- Fig1_Table %>%
   filter(LandType %in% c("Industrial", "Logistics")) %>%
   group_by(variable) %>% summarize(`Current Setback` = sum(`Current Setback`),
-                                   `No Setback` = sum(`No Setback`),)
+                                   `No Setback` = sum(`No Setback`))
 
 
 # Fig 2 #
