@@ -1,0 +1,65 @@
+Floating PV는 부유체 위에 태양광 패널을 설치하여 유연성과 간편한 설치가 특징이며, Pile-mounted PV(PMPV)는 기둥에 패널을 고정해 높은 구조적 안정성과 내구성을 제공한다
+
+Water-surface photovoltaic (WSPV) systems negatively impact aquatic ecosystems by decreasing water temperature, dissolved oxygen levels, and uncovered water surface area, leading to reduced plankton diversity and altered bird communities. These changes highlight potential ecological risks, emphasizing the need for careful planning and mitigation strategies.
+Water-surface photovoltaic (WSPV) systems reduce water temperature, dissolved oxygen, and uncovered surface area, harming plankton diversity and bird communities.
+
+
+
+
+
+농업진흥지역: agricultural promotion areas 
+농업보호구역: agricultural protection area 
+	Inland water treatment area
+
+
+(연구목적) 전략에 따른 이격거리 영향을 평가해봄으로써, 이격거리 규제 해제 고려시 경기도에서 선택해야할 전략을 살펴본다
+
+분석결과를 
+(경기도 전체)
+1. 경기도 전체적으로 면적, 용량, 발전량 측면에서 살펴봄.
+ - 
+2. 두가지 효율 (efficiency of land, efficiency of capacity)측면에서 살펴봄
+ - 이격거리 해제하면 단위면적당 필요한 면적이 늘어남 (Mountain, Farmland의 증가)
+ - 이격거리 해제해도 설비이용률에는 큰 변화가 없었음.
+(implication) 이격거리를 해제하면 잠재량은 % 늘어나긴 하나, land의 효율적인 측면은 떨어질 수도 있음을 암시.
+ 
+ 
+(land-use type별)
+1. 9가지 유형별로 분석.
+ - Current Setback에서는 Res --- parking순으로 발전잠재량이 많았고
+ - No Setback에서는 Res, Farm, Moun, Ind, Water, Public, Logi, Roadside, Parking
+ - Farm, MOun 제외하고는 증가율이 10~30% 머물러있지만, Farm은 93%, Moun은 84%나 증가함
+(implication) 이격거리 규제 해제를 고려할 때는 Mounain과 Farmland에 미치는 예상효과를 잘 살펴보고 실행해야 할것.
+(implication) 이격거리 규제를 유지한다면, Residential(1위)을 잘 살펴야 하고 (경기도민 REC), Ind&Log(2위)도 잠재량이 많고,여기는 특히 RE100과의 연계성이 뛰어난 곳이라 잘 살펴보아야 할것이다.
+(implication) 단위면적당 발전량을 늘리려면 roof-top PV의 보급을 늘리는 것이 중요.
+ 
+(supply curve)
+1. LCOE 토대로 공급곡선을 도출하고, 이를 토대로 3가지 전략 수립하여,전략별 Benefits(발전량, 감축량)과 Costs를 분석하였다.
+ - Price-based strategy, Quantity-based strategy, full deployment strategy
+ 
+ - (generation) Current setback 기준으로, price-based 1.55TWh, quantity-based 10.72TWh, Full deploy 10.87TWh 
+(implication) price-based에서 경기도 보급목표 (goal of quantity-based strategy)를 달성하지 못하므로, 두마리 토끼를 잡기는 힘들 것.
+
+- (generation) 이격거리 규제 해제에 따라 잠재량의 증가량 측면은 Full deploy strategy가 price-based보다 크지만, 증가율 측면은 Price-based가 Full보다 높았음.
+(implication) 국가 탄소중립 목표 대비 아직 태양광 시장이 초기 단계임을 고려할 때, price-based strategy 선택시 초기에 효율적으로 태양광 보급을 늘릴 수 있을 것.
+
+ - (generation) 한편 시나리오를 기준으로 전략을 살펴보면, 이격거리가 있을 때는 전체 잠재발전량(10.87TWh) 중 경제성이 확보된 잠재량 (1.55TWh)의 비중은 14.26% (line oa/od)인데 반해, 이격거리가 없을 때는 그 비중이 26.93% (4.04/15.00) (line ob/oe)로 증가한다. 
+(implication) 이는 규제 완화가 태양광 도입의 기술적 가능성을 경제적 타당성으로 전환될 확률을 높임을 의미한다.
+
+ - (avoided emissions) Full deployment strategy의 경우 경기도 온실가스 배출량의 5.49%, 7.58% 만큼 해당하는 양을 감축할 수 있을 것.
+(implication) ??
+
+ - (Generation costs) Quantity-based의 경우 같은량을 보급하는 데 비용을 42.7% 절감할 수 있는 것으로 나타남.
+ (implication) ??
+ 
+ - (Unit costs) 이격거리 규제 해제에 따라 발전 단위당 비용은 3전략 모두 감소하였으며, Quantity-based strategy (42.69%), Full deployment (14.68%), price-based strategy (2.09%) 순으로 단위 비용 감소율이 크게 나타남.
+(implication) 이격거리 규제 해제를 하던 안하던, 발전단위당 비용이 적은 전략은 price-based, quantity-based, full deploy 순서.
+(implication) 이격거리 규제로 인해 가장 단위비용 절감율 효과가 큰 전략은 Quantity-based strategy, Full deployment, price-based strategy 순서.
+ 
+ 
+ limitness
+-LCOE에 보조금이 안들어가 있음.
+-기후변화에 따라 감축양을 높이기 위해서는 장기적으로는 full deployment...
+ 
+ 
+ 
