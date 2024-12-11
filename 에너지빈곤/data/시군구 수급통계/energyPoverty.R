@@ -52,6 +52,18 @@ for ( i in 1:length(SGG_EB_year)) {
 fullData <- fullData %>%
   filter(region != "경기기타")
 
+### supply PV curve 논문에 쓸 data ### Start
+toe_to_kWh <- 11630
+ktoe_to_TWh <- toe_to_kWh / 10^(6)
+fullData %>%
+  select(sector, Electricity, region, year) %>%
+  filter(year == 2022) %>%
+  group_by(sector, year) %>% summarize(total = sum(Electricity)) %>%
+  mutate(total = total * ktoe_to_TWh)
+  
+
+### supply PV curve 논문에 쓸 data ### End
+
 #### 시군별 인구 data ####
 
 readPopData <- function() {
