@@ -463,7 +463,8 @@ totalData_woID_temp_YesSB <- totalData_woID_temp %>%
 totalData_woID_mnpt <- totalData_woID_temp_NoSB %>%
   bind_rows(totalData_woID_temp_YesSB)
 
-
+totalData %>%
+  filter(Scenario == 'No Setback')
 ######################################
 ######## [End] Clear Data Set ######## 
 ######################################
