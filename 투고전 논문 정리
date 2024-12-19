@@ -1,18 +1,21 @@
-논문 정리해야할 부분
+Presidential Commission on Carbon Neutrality and Green Growth
+Carbon Neutrality Scneario
 
-1. 약어
-NDC: 한번 나옴.
-필요한 부분에만 geographic & technical, 혹은 ecocnomic potential 이라고 적음
+Residential housing (11 cities), roads (10 cities), and cultural heritage sites (6 cities) are the most frequently regulated by setback requirements
 
-potential PV generation -> potential generation ?
-PV site -> PV installation site.
-The study -> This study
-AgroPV로 통일
+Wang et al. (2022) Resolving the conflict of greens A GIS-based and participatory
+Assuming an average capacity factor of 13.6% for Gyeonggi Province, the annual generation expected from 9 GW is 10.72 TWh.
 
-AgroPV
-LCOE
-GHG
-GIS
-기술적 잠재량
-경제적 잠재량
+
+Geospatial supply curve of PV generation: Current vs. No Setback scenarios.
+a regional differentiated electricity pricing system 
+
+8303
+458
+
+
+Gyeonggi Research Institute
+
+This study investigates the impact of setback regulations on photovoltaic (PV) deployment in Gyeonggi Province, South Korea, a region with high renewable energy demand. Using GIS-based spatial analysis, PV-suitable sites were identified and analyzed under current and no setback scenarios. Observed PV data informed calculations for PV generation potential and economic viability. Removing setback regulations increases PV installation area by 78.42%, capacity by 38.44%, and generation potential by 37.91%. However, this expansion reduces efficiency, especially in farmland and mountainous areas. Agrophotovoltaic and eco-conscious strategies are suggested to address environmental concerns. The residential sector offers the highest potential, highlighting the value of rooftop PV policies. Three deployment strategies were evaluated: price-based, quantity-based, and full deployment. The price-based strategy is cost-efficient but falls short of targets. The full deployment strategy meets PV goals but at higher costs. The quantity-based strategy balances scalability and cost-efficiency, reducing costs by 42.7% without setback regulations. This study underscores the importance of tailored policies to enhance PV deployment in densely populated, land-constrained areas, offering insights for achieving renewable energy targets.
+
 
